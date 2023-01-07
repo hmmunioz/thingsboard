@@ -52,7 +52,8 @@ import static org.thingsboard.server.dao.model.ModelConstants.ENTITY_TYPE_PROPER
 @TypeDef(name = "json", typeClass = JsonStringType.class)
 @MappedSuperclass
 @Slf4j
-public abstract class AbstractEntityViewEntity<T extends EntityView> extends BaseSqlEntity<T> implements SearchTextEntity<T> {
+public abstract class AbstractEntityViewEntity<T extends EntityView> extends BaseSqlEntity<T>
+        implements SearchTextEntity<T> {
 
     @Column(name = ModelConstants.ENTITY_VIEW_ENTITY_ID_PROPERTY)
     private UUID entityId;

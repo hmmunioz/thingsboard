@@ -82,6 +82,7 @@ import org.thingsboard.server.dao.device.DeviceProfileService;
 import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.edge.EdgeEventService;
 import org.thingsboard.server.dao.edge.EdgeService;
+import org.thingsboard.server.dao.entitygroup.EntityGroupService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.nosql.CassandraStatementTask;
 import org.thingsboard.server.dao.nosql.TbResultSetFuture;
@@ -142,15 +143,17 @@ class DefaultTbContext implements TbContext {
 
     private void tellNext(TbMsg msg, Set<String> relationTypes, Throwable th) {
         if (nodeCtx.getSelf().isDebugMode()) {
-            relationTypes.forEach(relationType -> mainCtx.persistDebugOutput(nodeCtx.getTenantId(), nodeCtx.getSelf().getId(), msg, relationType, th));
+            relationTypes.forEach(relationType -> mainCtx.persistDebugOutput(nodeCtx.getTenantId(),
+                    nodeCtx.getSelf().getId(), msg, relationType, th));
         }
         msg.getCallback().onProcessingEnd(nodeCtx.getSelf().getId());
-        nodeCtx.getChainActor().tell(new RuleNodeToRuleChainTellNextMsg(nodeCtx.getSelf().getRuleChainId(), nodeCtx.getSelf().getId(), relationTypes, msg, th != null ? th.getMessage() : null));
+        nodeCtx.getChainActor().tell(new RuleNodeToRuleChainTellNextMsg(nodeCtx.getSelf().getRuleChainId(),
+                nodeCtx.getSelf().getId(), relationTypes, msg, th != null ? th.getMessage() : null));
     }
 
     @Override
     public void tellSelf(TbMsg msg, long delayMs) {
-        //TODO: add persistence layer
+        // TODO: add persistence layer
         scheduleMsgWithDelay(new RuleNodeToSelfMsg(this, msg), delayMs, nodeCtx.getSelfActor());
     }
 
@@ -169,7 +172,8 @@ class DefaultTbContext implements TbContext {
             if (nodeCtx.getSelf().isDebugMode()) {
                 mainCtx.persistDebugOutput(nodeCtx.getTenantId(), nodeCtx.getSelf().getId(), msg, relationType);
             }
-            nodeCtx.getChainActor().tell(new RuleChainOutputMsg(item.getRuleChainId(), item.getRuleNodeId(), relationType, msg));
+            nodeCtx.getChainActor()
+                    .tell(new RuleChainOutputMsg(item.getRuleChainId(), item.getRuleNodeId(), relationType, msg));
         }
     }
 
@@ -200,7 +204,8 @@ class DefaultTbContext implements TbContext {
         if (nodeCtx.getSelf().isDebugMode()) {
             mainCtx.persistDebugOutput(nodeCtx.getTenantId(), nodeCtx.getSelf().getId(), tbMsg, "To Root Rule Chain");
         }
-        mainCtx.getClusterService().pushMsgToRuleEngine(tpi, tbMsg.getId(), msg, new SimpleTbQueueCallback(onSuccess, onFailure));
+        mainCtx.getClusterService().pushMsgToRuleEngine(tpi, tbMsg.getId(), msg,
+                new SimpleTbQueueCallback(onSuccess, onFailure));
     }
 
     @Override
@@ -222,25 +227,29 @@ class DefaultTbContext implements TbContext {
     }
 
     @Override
-    public void enqueueForTellNext(TbMsg tbMsg, String relationType, Runnable onSuccess, Consumer<Throwable> onFailure) {
+    public void enqueueForTellNext(TbMsg tbMsg, String relationType, Runnable onSuccess,
+            Consumer<Throwable> onFailure) {
         TopicPartitionInfo tpi = resolvePartition(tbMsg);
         enqueueForTellNext(tpi, tbMsg, Collections.singleton(relationType), null, onSuccess, onFailure);
     }
 
     @Override
-    public void enqueueForTellNext(TbMsg tbMsg, Set<String> relationTypes, Runnable onSuccess, Consumer<Throwable> onFailure) {
+    public void enqueueForTellNext(TbMsg tbMsg, Set<String> relationTypes, Runnable onSuccess,
+            Consumer<Throwable> onFailure) {
         TopicPartitionInfo tpi = resolvePartition(tbMsg);
         enqueueForTellNext(tpi, tbMsg, relationTypes, null, onSuccess, onFailure);
     }
 
     @Override
-    public void enqueueForTellNext(TbMsg tbMsg, String queueName, String relationType, Runnable onSuccess, Consumer<Throwable> onFailure) {
+    public void enqueueForTellNext(TbMsg tbMsg, String queueName, String relationType, Runnable onSuccess,
+            Consumer<Throwable> onFailure) {
         TopicPartitionInfo tpi = resolvePartition(tbMsg, queueName);
         enqueueForTellNext(tpi, queueName, tbMsg, Collections.singleton(relationType), null, onSuccess, onFailure);
     }
 
     @Override
-    public void enqueueForTellNext(TbMsg tbMsg, String queueName, Set<String> relationTypes, Runnable onSuccess, Consumer<Throwable> onFailure) {
+    public void enqueueForTellNext(TbMsg tbMsg, String queueName, Set<String> relationTypes, Runnable onSuccess,
+            Consumer<Throwable> onFailure) {
         TopicPartitionInfo tpi = resolvePartition(tbMsg, queueName);
         enqueueForTellNext(tpi, queueName, tbMsg, relationTypes, null, onSuccess, onFailure);
     }
@@ -253,11 +262,13 @@ class DefaultTbContext implements TbContext {
         return resolvePartition(tbMsg, tbMsg.getQueueName());
     }
 
-    private void enqueueForTellNext(TopicPartitionInfo tpi, TbMsg source, Set<String> relationTypes, String failureMessage, Runnable onSuccess, Consumer<Throwable> onFailure) {
+    private void enqueueForTellNext(TopicPartitionInfo tpi, TbMsg source, Set<String> relationTypes,
+            String failureMessage, Runnable onSuccess, Consumer<Throwable> onFailure) {
         enqueueForTellNext(tpi, source.getQueueName(), source, relationTypes, failureMessage, onSuccess, onFailure);
     }
 
-    private void enqueueForTellNext(TopicPartitionInfo tpi, String queueName, TbMsg source, Set<String> relationTypes, String failureMessage, Runnable onSuccess, Consumer<Throwable> onFailure) {
+    private void enqueueForTellNext(TopicPartitionInfo tpi, String queueName, TbMsg source, Set<String> relationTypes,
+            String failureMessage, Runnable onSuccess, Consumer<Throwable> onFailure) {
         if (!source.isValid()) {
             log.trace("[{}] Skip invalid message: {}", getTenantId(), source);
             if (onFailure != null) {
@@ -277,10 +288,11 @@ class DefaultTbContext implements TbContext {
             msg.setFailureMessage(failureMessage);
         }
         if (nodeCtx.getSelf().isDebugMode()) {
-            relationTypes.forEach(relationType ->
-                    mainCtx.persistDebugOutput(nodeCtx.getTenantId(), nodeCtx.getSelf().getId(), tbMsg, relationType, null, failureMessage));
+            relationTypes.forEach(relationType -> mainCtx.persistDebugOutput(nodeCtx.getTenantId(),
+                    nodeCtx.getSelf().getId(), tbMsg, relationType, null, failureMessage));
         }
-        mainCtx.getClusterService().pushMsgToRuleEngine(tpi, tbMsg.getId(), msg.build(), new SimpleTbQueueCallback(onSuccess, onFailure));
+        mainCtx.getClusterService().pushMsgToRuleEngine(tpi, tbMsg.getId(), msg.build(),
+                new SimpleTbQueueCallback(onSuccess, onFailure));
     }
 
     @Override
@@ -304,7 +316,8 @@ class DefaultTbContext implements TbContext {
     @Override
     public void tellFailure(TbMsg msg, Throwable th) {
         if (nodeCtx.getSelf().isDebugMode()) {
-            mainCtx.persistDebugOutput(nodeCtx.getTenantId(), nodeCtx.getSelf().getId(), msg, TbRelationTypes.FAILURE, th);
+            mainCtx.persistDebugOutput(nodeCtx.getTenantId(), nodeCtx.getSelf().getId(), msg, TbRelationTypes.FAILURE,
+                    th);
         }
         String failureMessage;
         if (th != null) {
@@ -331,8 +344,10 @@ class DefaultTbContext implements TbContext {
     }
 
     @Override
-    public TbMsg newMsg(String queueName, String type, EntityId originator, CustomerId customerId, TbMsgMetaData metaData, String data) {
-        return TbMsg.newMsg(queueName, type, originator, customerId, metaData, data, nodeCtx.getSelf().getRuleChainId(), nodeCtx.getSelf().getId());
+    public TbMsg newMsg(String queueName, String type, EntityId originator, CustomerId customerId,
+            TbMsgMetaData metaData, String data) {
+        return TbMsg.newMsg(queueName, type, originator, customerId, metaData, data, nodeCtx.getSelf().getRuleChainId(),
+                nodeCtx.getSelf().getId());
     }
 
     @Override
@@ -372,24 +387,29 @@ class DefaultTbContext implements TbContext {
         return entityActionMsg(alarm, alarm.getOriginator(), ruleNodeId, action, profile);
     }
 
-    public TbMsg attributesUpdatedActionMsg(EntityId originator, RuleNodeId ruleNodeId, String scope, List<AttributeKvEntry> attributes) {
+    public TbMsg attributesUpdatedActionMsg(EntityId originator, RuleNodeId ruleNodeId, String scope,
+            List<AttributeKvEntry> attributes) {
         ObjectNode entityNode = JacksonUtil.newObjectNode();
         if (attributes != null) {
             attributes.forEach(attributeKvEntry -> JacksonUtil.addKvEntry(entityNode, attributeKvEntry));
         }
-        return attributesActionMsg(originator, ruleNodeId, scope, DataConstants.ATTRIBUTES_UPDATED, JacksonUtil.toString(entityNode));
+        return attributesActionMsg(originator, ruleNodeId, scope, DataConstants.ATTRIBUTES_UPDATED,
+                JacksonUtil.toString(entityNode));
     }
 
-    public TbMsg attributesDeletedActionMsg(EntityId originator, RuleNodeId ruleNodeId, String scope, List<String> keys) {
+    public TbMsg attributesDeletedActionMsg(EntityId originator, RuleNodeId ruleNodeId, String scope,
+            List<String> keys) {
         ObjectNode entityNode = JacksonUtil.newObjectNode();
         ArrayNode attrsArrayNode = entityNode.putArray("attributes");
         if (keys != null) {
             keys.forEach(attrsArrayNode::add);
         }
-        return attributesActionMsg(originator, ruleNodeId, scope, DataConstants.ATTRIBUTES_DELETED, JacksonUtil.toString(entityNode));
+        return attributesActionMsg(originator, ruleNodeId, scope, DataConstants.ATTRIBUTES_DELETED,
+                JacksonUtil.toString(entityNode));
     }
 
-    private TbMsg attributesActionMsg(EntityId originator, RuleNodeId ruleNodeId, String scope, String action, String msgData) {
+    private TbMsg attributesActionMsg(EntityId originator, RuleNodeId ruleNodeId, String scope, String action,
+            String msgData) {
         TbMsgMetaData tbMsgMetaData = getActionMetaData(ruleNodeId);
         tbMsgMetaData.putValue("scope", scope);
         HasRuleEngineProfile profile = null;
@@ -412,15 +432,19 @@ class DefaultTbContext implements TbContext {
         return entityActionMsg(entity, id, ruleNodeId, action, null);
     }
 
-    public <E, I extends EntityId, K extends HasRuleEngineProfile> TbMsg entityActionMsg(E entity, I id, RuleNodeId ruleNodeId, String action, K profile) {
+    public <E, I extends EntityId, K extends HasRuleEngineProfile> TbMsg entityActionMsg(E entity, I id,
+            RuleNodeId ruleNodeId, String action, K profile) {
         try {
-            return entityActionMsg(id, getActionMetaData(ruleNodeId), mapper.writeValueAsString(mapper.valueToTree(entity)), action, profile);
+            return entityActionMsg(id, getActionMetaData(ruleNodeId),
+                    mapper.writeValueAsString(mapper.valueToTree(entity)), action, profile);
         } catch (JsonProcessingException | IllegalArgumentException e) {
-            throw new RuntimeException("Failed to process " + id.getEntityType().name().toLowerCase() + " " + action + " msg: " + e);
+            throw new RuntimeException(
+                    "Failed to process " + id.getEntityType().name().toLowerCase() + " " + action + " msg: " + e);
         }
     }
 
-    private <I extends EntityId, K extends HasRuleEngineProfile> TbMsg entityActionMsg(I id, TbMsgMetaData msgMetaData, String msgData, String action, K profile) {
+    private <I extends EntityId, K extends HasRuleEngineProfile> TbMsg entityActionMsg(I id, TbMsgMetaData msgMetaData,
+            String msgData, String action, K profile) {
         String defaultQueueName = null;
         RuleChainId defaultRuleChainId = null;
         if (profile != null) {
@@ -612,6 +636,11 @@ class DefaultTbContext implements TbContext {
     }
 
     @Override
+    public EntityGroupService getEntityGroupService() {
+        return mainCtx.getEntityGroupService();
+    }
+
+    @Override
     public EntityViewService getEntityViewService() {
         return mainCtx.getEntityViewService();
     }
@@ -718,7 +747,8 @@ class DefaultTbContext implements TbContext {
     @Override
     public RuleNodeState saveRuleNodeState(RuleNodeState state) {
         if (log.isDebugEnabled()) {
-            log.debug("[{}][{}][{}] Persist Rule Node State for entity: {}", getTenantId(), getSelfId(), state.getEntityId(), state.getStateData());
+            log.debug("[{}][{}][{}] Persist Rule Node State for entity: {}", getTenantId(), getSelfId(),
+                    state.getEntityId(), state.getStateData());
         }
         state.setRuleNodeId(getSelfId());
         return mainCtx.getRuleNodeStateService().save(getTenantId(), state);
@@ -746,12 +776,14 @@ class DefaultTbContext implements TbContext {
     }
 
     @Override
-    public void addDeviceProfileListeners(Consumer<DeviceProfile> profileListener, BiConsumer<DeviceId, DeviceProfile> deviceListener) {
+    public void addDeviceProfileListeners(Consumer<DeviceProfile> profileListener,
+            BiConsumer<DeviceId, DeviceProfile> deviceListener) {
         mainCtx.getDeviceProfileCache().addListener(getTenantId(), getSelfId(), profileListener, deviceListener);
     }
 
     @Override
-    public void addAssetProfileListeners(Consumer<AssetProfile> profileListener, BiConsumer<AssetId, AssetProfile> assetListener) {
+    public void addAssetProfileListeners(Consumer<AssetProfile> profileListener,
+            BiConsumer<AssetId, AssetProfile> assetListener) {
         mainCtx.getAssetProfileCache().addListener(getTenantId(), getSelfId(), profileListener, assetListener);
     }
 
@@ -791,7 +823,8 @@ class DefaultTbContext implements TbContext {
     @Override
     public void checkTenantEntity(EntityId entityId) {
         if (!this.getTenantId().equals(TenantIdLoader.findTenantId(this, entityId))) {
-            throw new RuntimeException("Entity with id: '" + entityId + "' specified in the configuration doesn't belong to the current tenant.");
+            throw new RuntimeException("Entity with id: '" + entityId
+                    + "' specified in the configuration doesn't belong to the current tenant.");
         }
     }
 

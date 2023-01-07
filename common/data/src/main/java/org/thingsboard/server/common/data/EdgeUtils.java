@@ -49,6 +49,8 @@ public final class EdgeUtils {
                 return EdgeEventType.ASSET_PROFILE;
             case ENTITY_VIEW:
                 return EdgeEventType.ENTITY_VIEW;
+            case ENTITY_GROUP:
+                return EdgeEventType.ENTITY_GROUP;
             case DASHBOARD:
                 return EdgeEventType.DASHBOARD;
             case USER:
@@ -80,11 +82,11 @@ public final class EdgeUtils {
     }
 
     public static EdgeEvent constructEdgeEvent(TenantId tenantId,
-                                               EdgeId edgeId,
-                                               EdgeEventType type,
-                                               EdgeEventActionType action,
-                                               EntityId entityId,
-                                               JsonNode body) {
+            EdgeId edgeId,
+            EdgeEventType type,
+            EdgeEventActionType action,
+            EntityId entityId,
+            JsonNode body) {
         EdgeEvent edgeEvent = new EdgeEvent();
         edgeEvent.setTenantId(tenantId);
         edgeEvent.setEdgeId(edgeId);

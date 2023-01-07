@@ -49,6 +49,7 @@ import org.thingsboard.server.dao.customer.CustomerService;
 import org.thingsboard.server.dao.dashboard.DashboardService;
 import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.edge.EdgeService;
+import org.thingsboard.server.dao.entitygroup.EntityGroupService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.user.UserService;
 
@@ -61,7 +62,8 @@ import static org.thingsboard.rule.engine.api.TbRelationTypes.FAILURE;
 import static org.thingsboard.rule.engine.api.TbRelationTypes.SUCCESS;
 
 @Slf4j
-public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationActionNodeConfiguration> implements TbNode {
+public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationActionNodeConfiguration>
+        implements TbNode {
 
     protected C config;
 
@@ -81,7 +83,8 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
     public void onMsg(TbContext ctx, TbMsg msg) {
         String relationType = processPattern(msg, config.getRelationType());
         withCallback(processEntityRelationAction(ctx, msg, relationType),
-                filterResult -> ctx.tellNext(filterResult.getMsg(), filterResult.isResult() ? SUCCESS : FAILURE), t -> ctx.tellFailure(msg, t), ctx.getDbCallbackExecutor());
+                filterResult -> ctx.tellNext(filterResult.getMsg(), filterResult.isResult() ? SUCCESS : FAILURE),
+                t -> ctx.tellFailure(msg, t), ctx.getDbCallbackExecutor());
     }
 
     @Override
@@ -91,13 +94,17 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
         }
     }
 
-    protected ListenableFuture<RelationContainer> processEntityRelationAction(TbContext ctx, TbMsg msg, String relationType) {
-        return Futures.transformAsync(getEntity(ctx, msg), entityContainer -> doProcessEntityRelationAction(ctx, msg, entityContainer, relationType), ctx.getDbCallbackExecutor());
+    protected ListenableFuture<RelationContainer> processEntityRelationAction(TbContext ctx, TbMsg msg,
+            String relationType) {
+        return Futures.transformAsync(getEntity(ctx, msg),
+                entityContainer -> doProcessEntityRelationAction(ctx, msg, entityContainer, relationType),
+                ctx.getDbCallbackExecutor());
     }
 
     protected abstract boolean createEntityIfNotExists();
 
-    protected abstract ListenableFuture<RelationContainer> doProcessEntityRelationAction(TbContext ctx, TbMsg msg, EntityContainer entityContainer, String relationType);
+    protected abstract ListenableFuture<RelationContainer> doProcessEntityRelationAction(TbContext ctx, TbMsg msg,
+            EntityContainer entityContainer, String relationType);
 
     protected abstract C loadEntityNodeActionConfig(TbNodeConfiguration configuration) throws TbNodeException;
 
@@ -114,7 +121,8 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
         return ctx.getDbCallbackExecutor().executeAsync(() -> {
             EntityContainer entityContainer = entityIdCache.get(key);
             if (entityContainer.getEntityId() == null) {
-                throw new RuntimeException("No entity found with type '" + key.getEntityType() + "' and name '" + key.getEntityName() + "'.");
+                throw new RuntimeException("No entity found with type '" + key.getEntityType() + "' and name '"
+                        + key.getEntityName() + "'.");
             }
             return entityContainer;
         });
@@ -123,11 +131,13 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
     protected SearchDirectionIds processSingleSearchDirection(TbMsg msg, EntityContainer entityContainer) {
         SearchDirectionIds searchDirectionIds = new SearchDirectionIds();
         if (EntitySearchDirection.FROM.name().equals(this.config.getDirection())) {
-            searchDirectionIds.setFromId(EntityIdFactory.getByTypeAndId(entityContainer.getEntityType().name(), entityContainer.getEntityId().toString()));
+            searchDirectionIds.setFromId(EntityIdFactory.getByTypeAndId(entityContainer.getEntityType().name(),
+                    entityContainer.getEntityId().toString()));
             searchDirectionIds.setToId(msg.getOriginator());
             searchDirectionIds.setOriginatorDirectionFrom(false);
         } else {
-            searchDirectionIds.setToId(EntityIdFactory.getByTypeAndId(entityContainer.getEntityType().name(), entityContainer.getEntityId().toString()));
+            searchDirectionIds.setToId(EntityIdFactory.getByTypeAndId(entityContainer.getEntityType().name(),
+                    entityContainer.getEntityId().toString()));
             searchDirectionIds.setFromId(msg.getOriginator());
             searchDirectionIds.setOriginatorDirectionFrom(true);
         }
@@ -136,9 +146,11 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
 
     protected ListenableFuture<List<EntityRelation>> processListSearchDirection(TbContext ctx, TbMsg msg) {
         if (EntitySearchDirection.FROM.name().equals(this.config.getDirection())) {
-            return ctx.getRelationService().findByToAndTypeAsync(ctx.getTenantId(), msg.getOriginator(), processPattern(msg, this.config.getRelationType()), RelationTypeGroup.COMMON);
+            return ctx.getRelationService().findByToAndTypeAsync(ctx.getTenantId(), msg.getOriginator(),
+                    processPattern(msg, this.config.getRelationType()), RelationTypeGroup.COMMON);
         } else {
-            return ctx.getRelationService().findByFromAndTypeAsync(ctx.getTenantId(), msg.getOriginator(), processPattern(msg, this.config.getRelationType()), RelationTypeGroup.COMMON);
+            return ctx.getRelationService().findByFromAndTypeAsync(ctx.getTenantId(), msg.getOriginator(),
+                    processPattern(msg, this.config.getRelationType()), RelationTypeGroup.COMMON);
         }
     }
 
@@ -183,7 +195,8 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
             switch (type) {
                 case DEVICE:
                     DeviceService deviceService = ctx.getDeviceService();
-                    Device device = deviceService.findDeviceByTenantIdAndName(ctx.getTenantId(), entitykey.getEntityName());
+                    Device device = deviceService.findDeviceByTenantIdAndName(ctx.getTenantId(),
+                            entitykey.getEntityName());
                     if (device != null) {
                         targetEntity.setEntityId(device.getId());
                     } else if (createIfNotExists) {
@@ -195,7 +208,8 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
                         ctx.getClusterService().onDeviceUpdated(savedDevice, null);
                         ctx.enqueue(ctx.deviceCreatedMsg(savedDevice, ctx.getSelfId()),
                                 () -> log.trace("Pushed Device Created message: {}", savedDevice),
-                                throwable -> log.warn("Failed to push Device Created message: {}", savedDevice, throwable));
+                                throwable -> log.warn("Failed to push Device Created message: {}", savedDevice,
+                                        throwable));
                         targetEntity.setEntityId(savedDevice.getId());
                     }
                     break;
@@ -212,13 +226,15 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
                         Asset savedAsset = assetService.saveAsset(newAsset);
                         ctx.enqueue(ctx.assetCreatedMsg(savedAsset, ctx.getSelfId()),
                                 () -> log.trace("Pushed Asset Created message: {}", savedAsset),
-                                throwable -> log.warn("Failed to push Asset Created message: {}", savedAsset, throwable));
+                                throwable -> log.warn("Failed to push Asset Created message: {}", savedAsset,
+                                        throwable));
                         targetEntity.setEntityId(savedAsset.getId());
                     }
                     break;
                 case CUSTOMER:
                     CustomerService customerService = ctx.getCustomerService();
-                    Optional<Customer> customerOptional = customerService.findCustomerByTenantIdAndTitle(ctx.getTenantId(), entitykey.getEntityName());
+                    Optional<Customer> customerOptional = customerService
+                            .findCustomerByTenantIdAndTitle(ctx.getTenantId(), entitykey.getEntityName());
                     if (customerOptional.isPresent()) {
                         targetEntity.setEntityId(customerOptional.get().getId());
                     } else if (createIfNotExists) {
@@ -228,7 +244,8 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
                         Customer savedCustomer = customerService.saveCustomer(newCustomer);
                         ctx.enqueue(ctx.customerCreatedMsg(savedCustomer, ctx.getSelfId()),
                                 () -> log.trace("Pushed Customer Created message: {}", savedCustomer),
-                                throwable -> log.warn("Failed to push Customer Created message: {}", savedCustomer, throwable));
+                                throwable -> log.warn("Failed to push Customer Created message: {}", savedCustomer,
+                                        throwable));
                         targetEntity.setEntityId(savedCustomer.getId());
                     }
                     break;
@@ -237,10 +254,15 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
                     break;
                 case ENTITY_VIEW:
                     EntityViewService entityViewService = ctx.getEntityViewService();
-                    EntityView entityView = entityViewService.findEntityViewByTenantIdAndName(ctx.getTenantId(), entitykey.getEntityName());
+                    EntityView entityView = entityViewService.findEntityViewByTenantIdAndName(ctx.getTenantId(),
+                            entitykey.getEntityName());
                     if (entityView != null) {
                         targetEntity.setEntityId(entityView.getId());
                     }
+                    break;
+                case ENTITY_GROUP:
+                    EntityGroupService entityGroupService = ctx.getEntityGroupService();
+
                     break;
                 case EDGE:
                     EdgeService edgeService = ctx.getEdgeService();
@@ -251,7 +273,8 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
                     break;
                 case DASHBOARD:
                     DashboardService dashboardService = ctx.getDashboardService();
-                    DashboardInfo dashboardInfo = dashboardService.findFirstDashboardInfoByTenantIdAndName(ctx.getTenantId(), entitykey.getEntityName());
+                    DashboardInfo dashboardInfo = dashboardService
+                            .findFirstDashboardInfoByTenantIdAndName(ctx.getTenantId(), entitykey.getEntityName());
                     if (dashboardInfo != null) {
                         targetEntity.setEntityId(dashboardInfo.getId());
                     }
@@ -279,6 +302,5 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
         private boolean result;
 
     }
-
 
 }

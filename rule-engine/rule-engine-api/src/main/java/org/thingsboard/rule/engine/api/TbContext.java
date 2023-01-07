@@ -53,6 +53,7 @@ import org.thingsboard.server.dao.device.DeviceProfileService;
 import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.edge.EdgeEventService;
 import org.thingsboard.server.dao.edge.EdgeService;
+import org.thingsboard.server.dao.entitygroup.EntityGroupService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.nosql.CassandraStatementTask;
 import org.thingsboard.server.dao.nosql.TbResultSetFuture;
@@ -79,7 +80,7 @@ public interface TbContext {
 
     /*
      *
-     *  METHODS TO CONTROL THE MESSAGE FLOW
+     * METHODS TO CONTROL THE MESSAGE FLOW
      *
      */
 
@@ -103,7 +104,8 @@ public interface TbContext {
 
     /**
      * Sends message to all Rule Nodes in the Rule Chain
-     * that are connected to the current Rule Node using one of specified relationTypes.
+     * that are connected to the current Rule Node using one of specified
+     * relationTypes.
      *
      * @param msg
      * @param relationTypes
@@ -137,17 +139,19 @@ public interface TbContext {
      * Sends message to the nested rule chain.
      * Fails processing of the message if the nested rule chain is not found.
      *
-     * @param msg - the message
+     * @param msg         - the message
      * @param ruleChainId - the id of a nested rule chain
      */
     void input(TbMsg msg, RuleChainId ruleChainId);
 
     /**
      * Sends message to the caller rule chain.
-     * Acknowledge the message if no caller rule chain is present in processing stack
+     * Acknowledge the message if no caller rule chain is present in processing
+     * stack
      *
-     * @param msg - the message
-     * @param relationType - the relation type that will be used to route messages in the caller rule chain
+     * @param msg          - the message
+     * @param relationType - the relation type that will be used to route messages
+     *                     in the caller rule chain
      */
     void output(TbMsg msg, String relationType);
 
@@ -168,15 +172,18 @@ public interface TbContext {
 
     void enqueueForTellNext(TbMsg msg, Set<String> relationTypes, Runnable onSuccess, Consumer<Throwable> onFailure);
 
-    void enqueueForTellNext(TbMsg msg, String queueName, String relationType, Runnable onSuccess, Consumer<Throwable> onFailure);
+    void enqueueForTellNext(TbMsg msg, String queueName, String relationType, Runnable onSuccess,
+            Consumer<Throwable> onFailure);
 
-    void enqueueForTellNext(TbMsg msg, String queueName, Set<String> relationTypes, Runnable onSuccess, Consumer<Throwable> onFailure);
+    void enqueueForTellNext(TbMsg msg, String queueName, Set<String> relationTypes, Runnable onSuccess,
+            Consumer<Throwable> onFailure);
 
     void ack(TbMsg tbMsg);
 
     TbMsg newMsg(String queueName, String type, EntityId originator, TbMsgMetaData metaData, String data);
 
-    TbMsg newMsg(String queueName, String type, EntityId originator, CustomerId customerId, TbMsgMetaData metaData, String data);
+    TbMsg newMsg(String queueName, String type, EntityId originator, CustomerId customerId, TbMsgMetaData metaData,
+            String data);
 
     TbMsg transformMsg(TbMsg origMsg, String type, EntityId originator, TbMsgMetaData metaData, String data);
 
@@ -189,7 +196,8 @@ public interface TbContext {
     // TODO: Does this changes the message?
     TbMsg alarmActionMsg(Alarm alarm, RuleNodeId ruleNodeId, String action);
 
-    TbMsg attributesUpdatedActionMsg(EntityId originator, RuleNodeId ruleNodeId, String scope, List<AttributeKvEntry> attributes);
+    TbMsg attributesUpdatedActionMsg(EntityId originator, RuleNodeId ruleNodeId, String scope,
+            List<AttributeKvEntry> attributes);
 
     TbMsg attributesDeletedActionMsg(EntityId originator, RuleNodeId ruleNodeId, String scope, List<String> keys);
 
@@ -197,7 +205,7 @@ public interface TbContext {
 
     /*
      *
-     *  METHODS TO PROCESS THE MESSAGES
+     * METHODS TO PROCESS THE MESSAGES
      *
      */
 
@@ -249,6 +257,8 @@ public interface TbContext {
 
     EntityViewService getEntityViewService();
 
+    EntityGroupService getEntityGroupService();
+
     ResourceService getResourceService();
 
     OtaPackageService getOtaPackageService();
@@ -279,8 +289,10 @@ public interface TbContext {
 
     /**
      * Creates JS Script Engine
+     * 
      * @deprecated
-     * <p> Use {@link #createScriptEngine} instead.
+     *             <p>
+     *             Use {@link #createScriptEngine} instead.
      *
      */
     @Deprecated
@@ -316,7 +328,8 @@ public interface TbContext {
 
     void addTenantProfileListener(Consumer<TenantProfile> listener);
 
-    void addDeviceProfileListeners(Consumer<DeviceProfile> listener, BiConsumer<DeviceId, DeviceProfile> deviceListener);
+    void addDeviceProfileListeners(Consumer<DeviceProfile> listener,
+            BiConsumer<DeviceId, DeviceProfile> deviceListener);
 
     void addAssetProfileListeners(Consumer<AssetProfile> listener, BiConsumer<AssetId, AssetProfile> assetListener);
 

@@ -1,0 +1,35 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ThingsboardInstallApplication<application>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "org.thingsboard.server.ThingsboardInstallApplication",
+            "projectName": "application",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-ThingsboardServerApplication<application>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "org.thingsboard.server.ThingsboardServerApplication",
+            "projectName": "application",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env",
+            "vmArgs": " -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=60414 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dspring.jmx.enabled=true -Djava.rmi.server.hostname=localhost -Dspring.application.admin.enabled=true -Dspring.boot.project.name=application"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-ThingsboardVersionControlExecutorApplication<vc-executor>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "org.thingsboard.server.vc.ThingsboardVersionControlExecutorApplication",
+            "projectName": "vc-executor",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

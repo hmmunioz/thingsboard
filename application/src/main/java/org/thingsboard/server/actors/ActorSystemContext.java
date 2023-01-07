@@ -63,6 +63,7 @@ import org.thingsboard.server.dao.device.DeviceProfileService;
 import org.thingsboard.server.dao.device.DeviceService;
 import org.thingsboard.server.dao.edge.EdgeEventService;
 import org.thingsboard.server.dao.edge.EdgeService;
+import org.thingsboard.server.dao.entitygroup.EntityGroupService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.event.EventService;
 import org.thingsboard.server.dao.nosql.CassandraBufferedRateReadExecutor;
@@ -86,6 +87,7 @@ import org.thingsboard.server.queue.util.DataDecodingEncodingService;
 import org.thingsboard.server.service.apiusage.TbApiUsageStateService;
 import org.thingsboard.server.service.component.ComponentDiscoveryService;
 import org.thingsboard.server.service.edge.rpc.EdgeRpcService;
+import org.thingsboard.server.service.entitiy.entitygroup.TbEntityGroupService;
 import org.thingsboard.server.service.entitiy.entityview.TbEntityViewService;
 import org.thingsboard.server.service.executors.DbCallbackExecutorService;
 import org.thingsboard.server.service.executors.ExternalCallExecutorService;
@@ -261,6 +263,15 @@ public class ActorSystemContext {
     @Getter
     private AuditLogService auditLogService;
 
+    @Autowired(required = false)
+    @Getter
+    private EntityGroupService entityGroupService;
+
+    @Lazy
+    @Autowired(required = false)
+    @Getter
+    private TbEntityGroupService tbEntityGroupService;
+
     @Autowired
     @Getter
     private EntityViewService entityViewService;
@@ -327,7 +338,7 @@ public class ActorSystemContext {
     @Getter
     private JsInvokeStats jsInvokeStats;
 
-    //TODO: separate context for TbCore and TbRuleEngine
+    // TODO: separate context for TbCore and TbRuleEngine
     @Autowired(required = false)
     @Getter
     private DeviceStateService deviceStateService;
@@ -444,7 +455,8 @@ public class ActorSystemContext {
     @Scheduled(fixedDelayString = "${actors.statistics.js_print_interval_ms}")
     public void printStats() {
         if (statisticsEnabled) {
-            if (jsInvokeStats.getRequests() > 0 || jsInvokeStats.getResponses() > 0 || jsInvokeStats.getFailures() > 0) {
+            if (jsInvokeStats.getRequests() > 0 || jsInvokeStats.getResponses() > 0
+                    || jsInvokeStats.getFailures() > 0) {
                 log.info("Rule Engine JS Invoke Stats: requests [{}] responses [{}] failures [{}]",
                         jsInvokeStats.getRequests(), jsInvokeStats.getResponses(), jsInvokeStats.getFailures());
                 jsInvokeStats.reset();
@@ -528,7 +540,8 @@ public class ActorSystemContext {
                 .error(toString(e)).build());
     }
 
-    public void persistLifecycleEvent(TenantId tenantId, EntityId entityId, ComponentLifecycleEvent lcEvent, Exception e) {
+    public void persistLifecycleEvent(TenantId tenantId, EntityId entityId, ComponentLifecycleEvent lcEvent,
+            Exception e) {
         LifecycleEvent.LifecycleEventBuilder event = LifecycleEvent.builder()
                 .tenantId(tenantId)
                 .entityId(entityId.getId())
@@ -566,15 +579,18 @@ public class ActorSystemContext {
         persistDebugAsync(tenantId, entityId, "IN", tbMsg, relationType, null, null);
     }
 
-    public void persistDebugInput(TenantId tenantId, EntityId entityId, TbMsg tbMsg, String relationType, Throwable error) {
+    public void persistDebugInput(TenantId tenantId, EntityId entityId, TbMsg tbMsg, String relationType,
+            Throwable error) {
         persistDebugAsync(tenantId, entityId, "IN", tbMsg, relationType, error, null);
     }
 
-    public void persistDebugOutput(TenantId tenantId, EntityId entityId, TbMsg tbMsg, String relationType, Throwable error, String failureMessage) {
+    public void persistDebugOutput(TenantId tenantId, EntityId entityId, TbMsg tbMsg, String relationType,
+            Throwable error, String failureMessage) {
         persistDebugAsync(tenantId, entityId, "OUT", tbMsg, relationType, error, failureMessage);
     }
 
-    public void persistDebugOutput(TenantId tenantId, EntityId entityId, TbMsg tbMsg, String relationType, Throwable error) {
+    public void persistDebugOutput(TenantId tenantId, EntityId entityId, TbMsg tbMsg, String relationType,
+            Throwable error) {
         persistDebugAsync(tenantId, entityId, "OUT", tbMsg, relationType, error, null);
     }
 
@@ -582,7 +598,8 @@ public class ActorSystemContext {
         persistDebugAsync(tenantId, entityId, "OUT", tbMsg, relationType, null, null);
     }
 
-    private void persistDebugAsync(TenantId tenantId, EntityId entityId, String type, TbMsg tbMsg, String relationType, Throwable error, String failureMessage) {
+    private void persistDebugAsync(TenantId tenantId, EntityId entityId, String type, TbMsg tbMsg, String relationType,
+            Throwable error, String failureMessage) {
         if (checkLimits(tenantId, tbMsg, error)) {
             try {
                 RuleNodeDebugEvent.RuleNodeDebugEventBuilder event = RuleNodeDebugEvent.builder()
@@ -614,8 +631,8 @@ public class ActorSystemContext {
 
     private boolean checkLimits(TenantId tenantId, TbMsg tbMsg, Throwable error) {
         if (debugPerTenantEnabled) {
-            DebugTbRateLimits debugTbRateLimits = debugPerTenantLimits.computeIfAbsent(tenantId, id ->
-                    new DebugTbRateLimits(new TbRateLimits(debugPerTenantLimitsConfiguration), false));
+            DebugTbRateLimits debugTbRateLimits = debugPerTenantLimits.computeIfAbsent(tenantId,
+                    id -> new DebugTbRateLimits(new TbRateLimits(debugPerTenantLimitsConfiguration), false));
 
             if (!debugTbRateLimits.getTbRateLimits().tryConsume()) {
                 if (!debugTbRateLimits.isRuleChainEventSaved()) {

@@ -13,27 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.thingsboard.server.common.data.edge;
+package org.thingsboard.server.service.entitiy.entitygroup;
 
-public enum EdgeEventType {
-    DASHBOARD,
-    ASSET,
-    DEVICE,
-    DEVICE_PROFILE,
-    ASSET_PROFILE,
-    ENTITY_VIEW,
-    ENTITY_GROUP,
-    ALARM,
-    RULE_CHAIN,
-    RULE_CHAIN_METADATA,
-    EDGE,
-    USER,
-    CUSTOMER,
-    RELATION,
-    TENANT,
-    WIDGETS_BUNDLE,
-    WIDGET_TYPE,
-    ADMIN_SETTINGS,
-    OTA_PACKAGE,
-    QUEUE
+import org.thingsboard.server.common.data.EntityGroup;
+import org.thingsboard.server.common.data.exception.ThingsboardException;
+
+import org.thingsboard.server.common.data.id.EntityGroupId;
+import org.thingsboard.server.common.msg.plugin.ComponentLifecycleListener;
+
+public interface TbEntityGroupService extends ComponentLifecycleListener {
+
+    EntityGroup findEntityGroupById(EntityGroupId entityGroupId) throws ThingsboardException;
+
 }

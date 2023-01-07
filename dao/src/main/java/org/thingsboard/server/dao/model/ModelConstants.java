@@ -30,7 +30,8 @@ public class ModelConstants {
     public static final UUID NULL_UUID = Uuids.startOf(0);
     public static final TenantId SYSTEM_TENANT = TenantId.fromUUID(ModelConstants.NULL_UUID);
 
-    // this is the difference between midnight October 15, 1582 UTC and midnight January 1, 1970 UTC as 100 nanosecond units
+    // this is the difference between midnight October 15, 1582 UTC and midnight
+    // January 1, 1970 UTC as 100 nanosecond units
     public static final long EPOCH_DIFF = 122192928000000000L;
 
     /**
@@ -78,7 +79,9 @@ public class ModelConstants {
     public static final String USER_CREDENTIALS_COLUMN_FAMILY_NAME = "user_credentials";
     public static final String USER_CREDENTIALS_USER_ID_PROPERTY = USER_ID_PROPERTY;
     public static final String USER_CREDENTIALS_ENABLED_PROPERTY = "enabled";
-    public static final String USER_CREDENTIALS_PASSWORD_PROPERTY = "password"; //NOSONAR, the constant used to identify password column name (not password value itself)
+    public static final String USER_CREDENTIALS_PASSWORD_PROPERTY = "password"; // NOSONAR, the constant used to
+                                                                                // identify password column name (not
+                                                                                // password value itself)
     public static final String USER_CREDENTIALS_ACTIVATE_TOKEN_PROPERTY = "activate_token";
     public static final String USER_CREDENTIALS_RESET_TOKEN_PROPERTY = "reset_token";
 
@@ -203,6 +206,7 @@ public class ModelConstants {
      * Cassandra entityView constants.
      */
     public static final String ENTITY_VIEW_TABLE_FAMILY_NAME = "entity_view";
+    public static final String ENTITY_GROUP_TABLE_FAMILY_NAME = "entity_group";
     public static final String ENTITY_VIEW_ENTITY_ID_PROPERTY = ENTITY_ID_COLUMN;
     public static final String ENTITY_VIEW_TENANT_ID_PROPERTY = TENANT_ID_PROPERTY;
     public static final String ENTITY_VIEW_CUSTOMER_ID_PROPERTY = CUSTOMER_ID_PROPERTY;
@@ -310,7 +314,6 @@ public class ModelConstants {
 
     public static final String RELATION_BY_TYPE_AND_CHILD_TYPE_VIEW_NAME = "relation_by_type_and_child_type";
     public static final String RELATION_REVERSE_VIEW_NAME = "reverse_relation";
-
 
     /**
      * Cassandra device_credentials constants.
@@ -600,7 +603,7 @@ public class ModelConstants {
 
     /**
      * User auth settings constants.
-     * */
+     */
     public static final String USER_AUTH_SETTINGS_COLUMN_FAMILY_NAME = "user_auth_settings";
     public static final String USER_AUTH_SETTINGS_USER_ID_PROPERTY = USER_ID_PROPERTY;
     public static final String USER_AUTH_SETTINGS_TWO_FA_SETTINGS = "two_fa_settings";
@@ -643,17 +646,21 @@ public class ModelConstants {
     public static final String QUEUE_COLUMN_FAMILY_NAME = "queue";
     public static final String QUEUE_ADDITIONAL_INFO_PROPERTY = ADDITIONAL_INFO_PROPERTY;
 
+    protected static final String[] NONE_AGGREGATION_COLUMNS = new String[] { LONG_VALUE_COLUMN, DOUBLE_VALUE_COLUMN,
+            BOOLEAN_VALUE_COLUMN, STRING_VALUE_COLUMN, JSON_VALUE_COLUMN, KEY_COLUMN, TS_COLUMN };
 
-    protected static final String[] NONE_AGGREGATION_COLUMNS = new String[]{LONG_VALUE_COLUMN, DOUBLE_VALUE_COLUMN, BOOLEAN_VALUE_COLUMN, STRING_VALUE_COLUMN, JSON_VALUE_COLUMN, KEY_COLUMN, TS_COLUMN};
+    protected static final String[] COUNT_AGGREGATION_COLUMNS = new String[] { count(LONG_VALUE_COLUMN),
+            count(DOUBLE_VALUE_COLUMN), count(BOOLEAN_VALUE_COLUMN), count(STRING_VALUE_COLUMN),
+            count(JSON_VALUE_COLUMN), max(TS_COLUMN) };
 
-    protected static final String[] COUNT_AGGREGATION_COLUMNS = new String[]{count(LONG_VALUE_COLUMN), count(DOUBLE_VALUE_COLUMN), count(BOOLEAN_VALUE_COLUMN), count(STRING_VALUE_COLUMN), count(JSON_VALUE_COLUMN), max(TS_COLUMN)};
-
-    protected static final String[] MIN_AGGREGATION_COLUMNS =
-            ArrayUtils.addAll(COUNT_AGGREGATION_COLUMNS, new String[]{min(LONG_VALUE_COLUMN), min(DOUBLE_VALUE_COLUMN), min(BOOLEAN_VALUE_COLUMN), min(STRING_VALUE_COLUMN), min(JSON_VALUE_COLUMN)});
-    protected static final String[] MAX_AGGREGATION_COLUMNS =
-            ArrayUtils.addAll(COUNT_AGGREGATION_COLUMNS, new String[]{max(LONG_VALUE_COLUMN), max(DOUBLE_VALUE_COLUMN), max(BOOLEAN_VALUE_COLUMN), max(STRING_VALUE_COLUMN), max(JSON_VALUE_COLUMN)});
-    protected static final String[] SUM_AGGREGATION_COLUMNS =
-            ArrayUtils.addAll(COUNT_AGGREGATION_COLUMNS, new String[]{sum(LONG_VALUE_COLUMN), sum(DOUBLE_VALUE_COLUMN)});
+    protected static final String[] MIN_AGGREGATION_COLUMNS = ArrayUtils.addAll(COUNT_AGGREGATION_COLUMNS,
+            new String[] { min(LONG_VALUE_COLUMN), min(DOUBLE_VALUE_COLUMN), min(BOOLEAN_VALUE_COLUMN),
+                    min(STRING_VALUE_COLUMN), min(JSON_VALUE_COLUMN) });
+    protected static final String[] MAX_AGGREGATION_COLUMNS = ArrayUtils.addAll(COUNT_AGGREGATION_COLUMNS,
+            new String[] { max(LONG_VALUE_COLUMN), max(DOUBLE_VALUE_COLUMN), max(BOOLEAN_VALUE_COLUMN),
+                    max(STRING_VALUE_COLUMN), max(JSON_VALUE_COLUMN) });
+    protected static final String[] SUM_AGGREGATION_COLUMNS = ArrayUtils.addAll(COUNT_AGGREGATION_COLUMNS,
+            new String[] { sum(LONG_VALUE_COLUMN), sum(DOUBLE_VALUE_COLUMN) });
     protected static final String[] AVG_AGGREGATION_COLUMNS = SUM_AGGREGATION_COLUMNS;
 
     public static String min(String s) {
