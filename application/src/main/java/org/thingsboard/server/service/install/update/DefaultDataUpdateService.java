@@ -66,6 +66,7 @@ import org.thingsboard.server.dao.alarm.AlarmDao;
 import org.thingsboard.server.dao.audit.AuditLogDao;
 import org.thingsboard.server.dao.edge.EdgeEventDao;
 import org.thingsboard.server.dao.entity.EntityService;
+import org.thingsboard.server.dao.entitygroup.EntityGroupService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.event.EventService;
 import org.thingsboard.server.dao.model.sql.DeviceProfileEntity;
@@ -108,6 +109,9 @@ public class DefaultDataUpdateService implements DataUpdateService {
 
     @Autowired
     private EntityViewService entityViewService;
+
+    @Autowired
+    private EntityGroupService entityGroupService;
 
     @Autowired
     private TimeseriesService tsService;
@@ -189,14 +193,16 @@ public class DefaultDataUpdateService implements DataUpdateService {
                 systemDataLoaderService.saveLegacyYmlSettings();
                 boolean skipAuditLogsMigration = getEnv("TB_SKIP_AUDIT_LOGS_MIGRATION", false);
                 if (!skipAuditLogsMigration) {
-                    log.info("Starting audit logs migration. Can be skipped with TB_SKIP_AUDIT_LOGS_MIGRATION env variable set to true");
+                    log.info(
+                            "Starting audit logs migration. Can be skipped with TB_SKIP_AUDIT_LOGS_MIGRATION env variable set to true");
                     auditLogDao.migrateAuditLogs();
                 } else {
                     log.info("Skipping audit logs migration");
                 }
                 boolean skipEdgeEventsMigration = getEnv("TB_SKIP_EDGE_EVENTS_MIGRATION", false);
                 if (!skipEdgeEventsMigration) {
-                    log.info("Starting edge events migration. Can be skipped with TB_SKIP_EDGE_EVENTS_MIGRATION env variable set to true");
+                    log.info(
+                            "Starting edge events migration. Can be skipped with TB_SKIP_EDGE_EVENTS_MIGRATION env variable set to true");
                     edgeEventDao.migrateEdgeEvents();
                 } else {
                     log.info("Skipping edge events migration");
@@ -207,26 +213,25 @@ public class DefaultDataUpdateService implements DataUpdateService {
         }
     }
 
-    private final PaginatedUpdater<String, DeviceProfileEntity> deviceProfileEntityDynamicConditionsUpdater =
-            new PaginatedUpdater<>() {
+    private final PaginatedUpdater<String, DeviceProfileEntity> deviceProfileEntityDynamicConditionsUpdater = new PaginatedUpdater<>() {
 
-                @Override
-                protected String getName() {
-                    return "Device Profile Entity Dynamic Conditions Updater";
-                }
+        @Override
+        protected String getName() {
+            return "Device Profile Entity Dynamic Conditions Updater";
+        }
 
-                @Override
-                protected PageData<DeviceProfileEntity> findEntities(String id, PageLink pageLink) {
-                    return DaoUtil.pageToPageData(deviceProfileRepository.findAll(DaoUtil.toPageable(pageLink)));
-                }
+        @Override
+        protected PageData<DeviceProfileEntity> findEntities(String id, PageLink pageLink) {
+            return DaoUtil.pageToPageData(deviceProfileRepository.findAll(DaoUtil.toPageable(pageLink)));
+        }
 
-                @Override
-                protected void updateEntity(DeviceProfileEntity deviceProfile) {
-                    if (convertDeviceProfileForVersion330(deviceProfile.getProfileData())) {
-                        deviceProfileRepository.save(deviceProfile);
-                    }
-                }
-            };
+        @Override
+        protected void updateEntity(DeviceProfileEntity deviceProfile) {
+            if (convertDeviceProfileForVersion330(deviceProfile.getProfileData())) {
+                deviceProfileRepository.save(deviceProfile);
+            }
+        }
+    };
 
     boolean convertDeviceProfileForVersion330(JsonNode profileData) {
         boolean isUpdated = false;
@@ -255,36 +260,35 @@ public class DefaultDataUpdateService implements DataUpdateService {
         return isUpdated;
     }
 
-    private final PaginatedUpdater<String, Tenant> tenantsDefaultRuleChainUpdater =
-            new PaginatedUpdater<>() {
+    private final PaginatedUpdater<String, Tenant> tenantsDefaultRuleChainUpdater = new PaginatedUpdater<>() {
 
-                @Override
-                protected String getName() {
-                    return "Tenants default rule chain updater";
-                }
+        @Override
+        protected String getName() {
+            return "Tenants default rule chain updater";
+        }
 
-                @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
+        @Override
+        protected boolean forceReportTotal() {
+            return true;
+        }
 
-                @Override
-                protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
-                    return tenantService.findTenants(pageLink);
-                }
+        @Override
+        protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
+            return tenantService.findTenants(pageLink);
+        }
 
-                @Override
-                protected void updateEntity(Tenant tenant) {
-                    try {
-                        RuleChain ruleChain = ruleChainService.getRootTenantRuleChain(tenant.getId());
-                        if (ruleChain == null) {
-                            installScripts.createDefaultRuleChains(tenant.getId());
-                        }
-                    } catch (Exception e) {
-                        log.error("Unable to update Tenant", e);
-                    }
+        @Override
+        protected void updateEntity(Tenant tenant) {
+            try {
+                RuleChain ruleChain = ruleChainService.getRootTenantRuleChain(tenant.getId());
+                if (ruleChain == null) {
+                    installScripts.createDefaultRuleChains(tenant.getId());
                 }
-            };
+            } catch (Exception e) {
+                log.error("Unable to update Tenant", e);
+            }
+        }
+    };
 
     private void updateNestedRuleChains() {
         try {
@@ -292,22 +296,26 @@ public class DefaultDataUpdateService implements DataUpdateService {
             var updated = 0;
             boolean hasNext = true;
             while (hasNext) {
-                List<EntityRelation> relations = relationService.findRuleNodeToRuleChainRelations(TenantId.SYS_TENANT_ID, RuleChainType.CORE, packSize);
+                List<EntityRelation> relations = relationService
+                        .findRuleNodeToRuleChainRelations(TenantId.SYS_TENANT_ID, RuleChainType.CORE, packSize);
                 hasNext = relations.size() == packSize;
                 for (EntityRelation relation : relations) {
                     try {
                         RuleNodeId sourceNodeId = new RuleNodeId(relation.getFrom().getId());
                         RuleNode sourceNode = ruleChainService.findRuleNodeById(TenantId.SYS_TENANT_ID, sourceNodeId);
                         if (sourceNode == null) {
-                            log.info("Skip processing of relation for non existing source rule node: [{}]", sourceNodeId);
+                            log.info("Skip processing of relation for non existing source rule node: [{}]",
+                                    sourceNodeId);
                             relationService.deleteRelation(TenantId.SYS_TENANT_ID, relation);
                             continue;
                         }
                         RuleChainId sourceRuleChainId = sourceNode.getRuleChainId();
                         RuleChainId targetRuleChainId = new RuleChainId(relation.getTo().getId());
-                        RuleChain targetRuleChain = ruleChainService.findRuleChainById(TenantId.SYS_TENANT_ID, targetRuleChainId);
+                        RuleChain targetRuleChain = ruleChainService.findRuleChainById(TenantId.SYS_TENANT_ID,
+                                targetRuleChainId);
                         if (targetRuleChain == null) {
-                            log.info("Skip processing of relation for non existing target rule chain: [{}]", targetRuleChainId);
+                            log.info("Skip processing of relation for non existing target rule chain: [{}]",
+                                    targetRuleChainId);
                             relationService.deleteRelation(TenantId.SYS_TENANT_ID, relation);
                             continue;
                         }
@@ -338,7 +346,7 @@ public class DefaultDataUpdateService implements DataUpdateService {
                         sourceRuleNodeToTargetRuleNode.setAdditionalInfo(relation.getAdditionalInfo());
                         relationService.saveRelation(tenantId, sourceRuleNodeToTargetRuleNode);
 
-                        //Delete old relation
+                        // Delete old relation
                         relationService.deleteRelation(tenantId, relation);
                         updated++;
                     } catch (Exception e) {
@@ -354,124 +362,123 @@ public class DefaultDataUpdateService implements DataUpdateService {
         }
     }
 
-    private final PaginatedUpdater<String, Tenant> tenantsDefaultEdgeRuleChainUpdater =
-            new PaginatedUpdater<>() {
+    private final PaginatedUpdater<String, Tenant> tenantsDefaultEdgeRuleChainUpdater = new PaginatedUpdater<>() {
 
-                @Override
-                protected String getName() {
-                    return "Tenants default edge rule chain updater";
+        @Override
+        protected String getName() {
+            return "Tenants default edge rule chain updater";
+        }
+
+        @Override
+        protected boolean forceReportTotal() {
+            return true;
+        }
+
+        @Override
+        protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
+            return tenantService.findTenants(pageLink);
+        }
+
+        @Override
+        protected void updateEntity(Tenant tenant) {
+            try {
+                RuleChain defaultEdgeRuleChain = ruleChainService.getEdgeTemplateRootRuleChain(tenant.getId());
+                if (defaultEdgeRuleChain == null) {
+                    installScripts.createDefaultEdgeRuleChains(tenant.getId());
                 }
+            } catch (Exception e) {
+                log.error("Unable to update Tenant", e);
+            }
+        }
+    };
 
-                @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
+    private final PaginatedUpdater<String, Tenant> tenantsRootRuleChainUpdater = new PaginatedUpdater<>() {
 
-                @Override
-                protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
-                    return tenantService.findTenants(pageLink);
-                }
+        @Override
+        protected String getName() {
+            return "Tenants root rule chain updater";
+        }
 
-                @Override
-                protected void updateEntity(Tenant tenant) {
-                    try {
-                        RuleChain defaultEdgeRuleChain = ruleChainService.getEdgeTemplateRootRuleChain(tenant.getId());
-                        if (defaultEdgeRuleChain == null) {
-                            installScripts.createDefaultEdgeRuleChains(tenant.getId());
-                        }
-                    } catch (Exception e) {
-                        log.error("Unable to update Tenant", e);
+        @Override
+        protected boolean forceReportTotal() {
+            return true;
+        }
+
+        @Override
+        protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
+            return tenantService.findTenants(pageLink);
+        }
+
+        @Override
+        protected void updateEntity(Tenant tenant) {
+            try {
+                RuleChain ruleChain = ruleChainService.getRootTenantRuleChain(tenant.getId());
+                if (ruleChain == null) {
+                    installScripts.createDefaultRuleChains(tenant.getId());
+                } else {
+                    RuleChainMetaData md = ruleChainService.loadRuleChainMetaData(tenant.getId(), ruleChain.getId());
+                    int oldIdx = md.getFirstNodeIndex();
+                    int newIdx = md.getNodes().size();
+
+                    if (md.getNodes().size() < oldIdx) {
+                        // Skip invalid rule chains
+                        return;
                     }
-                }
-            };
 
-    private final PaginatedUpdater<String, Tenant> tenantsRootRuleChainUpdater =
-            new PaginatedUpdater<>() {
-
-                @Override
-                protected String getName() {
-                    return "Tenants root rule chain updater";
-                }
-
-                @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
-
-                @Override
-                protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
-                    return tenantService.findTenants(pageLink);
-                }
-
-                @Override
-                protected void updateEntity(Tenant tenant) {
-                    try {
-                        RuleChain ruleChain = ruleChainService.getRootTenantRuleChain(tenant.getId());
-                        if (ruleChain == null) {
-                            installScripts.createDefaultRuleChains(tenant.getId());
-                        } else {
-                            RuleChainMetaData md = ruleChainService.loadRuleChainMetaData(tenant.getId(), ruleChain.getId());
-                            int oldIdx = md.getFirstNodeIndex();
-                            int newIdx = md.getNodes().size();
-
-                            if (md.getNodes().size() < oldIdx) {
-                                // Skip invalid rule chains
-                                return;
-                            }
-
-                            RuleNode oldFirstNode = md.getNodes().get(oldIdx);
-                            if (oldFirstNode.getType().equals(TbDeviceProfileNode.class.getName())) {
-                                // No need to update the rule node twice.
-                                return;
-                            }
-
-                            RuleNode ruleNode = new RuleNode();
-                            ruleNode.setRuleChainId(ruleChain.getId());
-                            ruleNode.setName("Device Profile Node");
-                            ruleNode.setType(TbDeviceProfileNode.class.getName());
-                            ruleNode.setDebugMode(false);
-                            TbDeviceProfileNodeConfiguration ruleNodeConfiguration = new TbDeviceProfileNodeConfiguration().defaultConfiguration();
-                            ruleNode.setConfiguration(JacksonUtil.valueToTree(ruleNodeConfiguration));
-                            ObjectNode additionalInfo = JacksonUtil.newObjectNode();
-                            additionalInfo.put("description", "Process incoming messages from devices with the alarm rules defined in the device profile. Dispatch all incoming messages with \"Success\" relation type.");
-                            additionalInfo.put("layoutX", 204);
-                            additionalInfo.put("layoutY", 240);
-                            ruleNode.setAdditionalInfo(additionalInfo);
-
-                            md.getNodes().add(ruleNode);
-                            md.setFirstNodeIndex(newIdx);
-                            md.addConnectionInfo(newIdx, oldIdx, "Success");
-                            ruleChainService.saveRuleChainMetaData(tenant.getId(), md);
-                        }
-                    } catch (Exception e) {
-                        log.error("[{}] Unable to update Tenant: {}", tenant.getId(), tenant.getName(), e);
+                    RuleNode oldFirstNode = md.getNodes().get(oldIdx);
+                    if (oldFirstNode.getType().equals(TbDeviceProfileNode.class.getName())) {
+                        // No need to update the rule node twice.
+                        return;
                     }
-                }
-            };
 
-    private final PaginatedUpdater<String, Tenant> tenantsEntityViewsUpdater =
-            new PaginatedUpdater<>() {
+                    RuleNode ruleNode = new RuleNode();
+                    ruleNode.setRuleChainId(ruleChain.getId());
+                    ruleNode.setName("Device Profile Node");
+                    ruleNode.setType(TbDeviceProfileNode.class.getName());
+                    ruleNode.setDebugMode(false);
+                    TbDeviceProfileNodeConfiguration ruleNodeConfiguration = new TbDeviceProfileNodeConfiguration()
+                            .defaultConfiguration();
+                    ruleNode.setConfiguration(JacksonUtil.valueToTree(ruleNodeConfiguration));
+                    ObjectNode additionalInfo = JacksonUtil.newObjectNode();
+                    additionalInfo.put("description",
+                            "Process incoming messages from devices with the alarm rules defined in the device profile. Dispatch all incoming messages with \"Success\" relation type.");
+                    additionalInfo.put("layoutX", 204);
+                    additionalInfo.put("layoutY", 240);
+                    ruleNode.setAdditionalInfo(additionalInfo);
 
-                @Override
-                protected String getName() {
-                    return "Tenants entity views updater";
+                    md.getNodes().add(ruleNode);
+                    md.setFirstNodeIndex(newIdx);
+                    md.addConnectionInfo(newIdx, oldIdx, "Success");
+                    ruleChainService.saveRuleChainMetaData(tenant.getId(), md);
                 }
+            } catch (Exception e) {
+                log.error("[{}] Unable to update Tenant: {}", tenant.getId(), tenant.getName(), e);
+            }
+        }
+    };
 
-                @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
+    private final PaginatedUpdater<String, Tenant> tenantsEntityViewsUpdater = new PaginatedUpdater<>() {
 
-                @Override
-                protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
-                    return tenantService.findTenants(pageLink);
-                }
+        @Override
+        protected String getName() {
+            return "Tenants entity views updater";
+        }
 
-                @Override
-                protected void updateEntity(Tenant tenant) {
-                    updateTenantEntityViews(tenant.getId());
-                }
-            };
+        @Override
+        protected boolean forceReportTotal() {
+            return true;
+        }
+
+        @Override
+        protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
+            return tenantService.findTenants(pageLink);
+        }
+
+        @Override
+        protected void updateEntity(Tenant tenant) {
+            updateTenantEntityViews(tenant.getId());
+        }
+    };
 
     private void updateTenantEntityViews(TenantId tenantId) {
         PageLink pageLink = new PageLink(100);
@@ -500,19 +507,23 @@ public class DefaultDataUpdateService implements DataUpdateService {
 
     private ListenableFuture<List<Void>> updateEntityViewLatestTelemetry(EntityView entityView) {
         EntityViewId entityId = entityView.getId();
-        List<String> keys = entityView.getKeys() != null && entityView.getKeys().getTimeseries() != null ?
-                entityView.getKeys().getTimeseries() : Collections.emptyList();
+        List<String> keys = entityView.getKeys() != null && entityView.getKeys().getTimeseries() != null
+                ? entityView.getKeys().getTimeseries()
+                : Collections.emptyList();
         long startTs = entityView.getStartTimeMs();
         long endTs = entityView.getEndTimeMs() == 0 ? Long.MAX_VALUE : entityView.getEndTimeMs();
         ListenableFuture<List<String>> keysFuture;
         if (keys.isEmpty()) {
             keysFuture = Futures.transform(tsService.findAllLatest(TenantId.SYS_TENANT_ID,
-                    entityView.getEntityId()), latest -> latest.stream().map(TsKvEntry::getKey).collect(Collectors.toList()), MoreExecutors.directExecutor());
+                    entityView.getEntityId()),
+                    latest -> latest.stream().map(TsKvEntry::getKey).collect(Collectors.toList()),
+                    MoreExecutors.directExecutor());
         } else {
             keysFuture = Futures.immediateFuture(keys);
         }
         ListenableFuture<List<TsKvEntry>> latestFuture = Futures.transformAsync(keysFuture, fetchKeys -> {
-            List<ReadTsKvQuery> queries = fetchKeys.stream().filter(key -> !isBlank(key)).map(key -> new BaseReadTsKvQuery(key, startTs, endTs, 1, "DESC")).collect(Collectors.toList());
+            List<ReadTsKvQuery> queries = fetchKeys.stream().filter(key -> !isBlank(key))
+                    .map(key -> new BaseReadTsKvQuery(key, startTs, endTs, 1, "DESC")).collect(Collectors.toList());
             if (!queries.isEmpty()) {
                 return tsService.findAll(TenantId.SYS_TENANT_ID, entityView.getEntityId(), queries);
             } else {
@@ -521,38 +532,38 @@ public class DefaultDataUpdateService implements DataUpdateService {
         }, MoreExecutors.directExecutor());
         return Futures.transformAsync(latestFuture, latestValues -> {
             if (latestValues != null && !latestValues.isEmpty()) {
-                ListenableFuture<List<Void>> saveFuture = tsService.saveLatest(TenantId.SYS_TENANT_ID, entityId, latestValues);
+                ListenableFuture<List<Void>> saveFuture = tsService.saveLatest(TenantId.SYS_TENANT_ID, entityId,
+                        latestValues);
                 return saveFuture;
             }
             return Futures.immediateFuture(null);
         }, MoreExecutors.directExecutor());
     }
 
-    private final PaginatedUpdater<String, Tenant> tenantsAlarmsCustomerUpdater =
-            new PaginatedUpdater<>() {
+    private final PaginatedUpdater<String, Tenant> tenantsAlarmsCustomerUpdater = new PaginatedUpdater<>() {
 
-                final AtomicLong processed = new AtomicLong();
+        final AtomicLong processed = new AtomicLong();
 
-                @Override
-                protected String getName() {
-                    return "Tenants alarms customer updater";
-                }
+        @Override
+        protected String getName() {
+            return "Tenants alarms customer updater";
+        }
 
-                @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
+        @Override
+        protected boolean forceReportTotal() {
+            return true;
+        }
 
-                @Override
-                protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
-                    return tenantService.findTenants(pageLink);
-                }
+        @Override
+        protected PageData<Tenant> findEntities(String region, PageLink pageLink) {
+            return tenantService.findTenants(pageLink);
+        }
 
-                @Override
-                protected void updateEntity(Tenant tenant) {
-                    updateTenantAlarmsCustomer(tenant.getId(), getName(), processed);
-                }
-            };
+        @Override
+        protected void updateEntity(Tenant tenant) {
+            updateTenantAlarmsCustomer(tenant.getId(), getName(), processed);
+        }
+    };
 
     private void updateTenantAlarmsCustomer(TenantId tenantId, String name, AtomicLong processed) {
         AlarmQuery alarmQuery = new AlarmQuery(null, new TimePageLink(1000), null, null, false);
@@ -583,8 +594,7 @@ public class DefaultDataUpdateService implements DataUpdateService {
                 if (spec.has("value")) {
                     long value = spec.get("value").asLong();
                     var predicate = new FilterPredicateValue<>(
-                            value, null, new DynamicValue<>(null, null, false)
-                    );
+                            value, null, new DynamicValue<>(null, null, false));
                     ((ObjectNode) spec).remove("value");
                     ((ObjectNode) spec).putPOJO("predicate", predicate);
                     return true;
@@ -593,8 +603,7 @@ public class DefaultDataUpdateService implements DataUpdateService {
                 if (spec.has("count")) {
                     int count = spec.get("count").asInt();
                     var predicate = new FilterPredicateValue<>(
-                            count, null, new DynamicValue<>(null, null, false)
-                    );
+                            count, null, new DynamicValue<>(null, null, false));
                     ((ObjectNode) spec).remove("count");
                     ((ObjectNode) spec).putPOJO("predicate", predicate);
                     return true;
@@ -605,32 +614,32 @@ public class DefaultDataUpdateService implements DataUpdateService {
     }
 
     private void updateOAuth2Params() {
-        log.warn("CAUTION: Update of Oauth2 parameters from 3.2.2 to 3.3.0 available only in ThingsBoard versions 3.3.0/3.3.1");
+        log.warn(
+                "CAUTION: Update of Oauth2 parameters from 3.2.2 to 3.3.0 available only in ThingsBoard versions 3.3.0/3.3.1");
     }
 
-    private final PaginatedUpdater<String, TenantProfile> tenantsProfileQueueConfigurationUpdater =
-            new PaginatedUpdater<>() {
+    private final PaginatedUpdater<String, TenantProfile> tenantsProfileQueueConfigurationUpdater = new PaginatedUpdater<>() {
 
-                @Override
-                protected String getName() {
-                    return "Tenant profiles queue configuration updater";
-                }
+        @Override
+        protected String getName() {
+            return "Tenant profiles queue configuration updater";
+        }
 
-                @Override
-                protected boolean forceReportTotal() {
-                    return true;
-                }
+        @Override
+        protected boolean forceReportTotal() {
+            return true;
+        }
 
-                @Override
-                protected PageData<TenantProfile> findEntities(String id, PageLink pageLink) {
-                    return tenantProfileService.findTenantProfiles(TenantId.SYS_TENANT_ID, pageLink);
-                }
+        @Override
+        protected PageData<TenantProfile> findEntities(String id, PageLink pageLink) {
+            return tenantProfileService.findTenantProfiles(TenantId.SYS_TENANT_ID, pageLink);
+        }
 
-                @Override
-                protected void updateEntity(TenantProfile tenantProfile) {
-                    updateTenantProfileQueueConfiguration(tenantProfile);
-                }
-            };
+        @Override
+        protected void updateEntity(TenantProfile tenantProfile) {
+            updateTenantProfileQueueConfiguration(tenantProfile);
+        }
+    };
 
     private void updateTenantProfileQueueConfiguration(TenantProfile profile) {
         try {
@@ -645,7 +654,8 @@ public class DefaultDataUpdateService implements DataUpdateService {
                 });
             }
         } catch (Exception e) {
-            log.error("Failed to update tenant profile queue configuration name=[" + profile.getName() + "], id=[" + profile.getId().getId() + "]", e);
+            log.error("Failed to update tenant profile queue configuration name=[" + profile.getName() + "], id=["
+                    + profile.getId().getId() + "]", e);
         }
     }
 

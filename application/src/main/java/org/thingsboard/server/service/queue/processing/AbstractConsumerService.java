@@ -62,7 +62,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
-public abstract class AbstractConsumerService<N extends com.google.protobuf.GeneratedMessageV3> extends TbApplicationEventListener<PartitionChangeEvent> {
+public abstract class AbstractConsumerService<N extends com.google.protobuf.GeneratedMessageV3>
+        extends TbApplicationEventListener<PartitionChangeEvent> {
 
     protected volatile ExecutorService consumersExecutor;
     protected volatile ExecutorService notificationsConsumerExecutor;
@@ -79,11 +80,11 @@ public abstract class AbstractConsumerService<N extends com.google.protobuf.Gene
     protected final TbQueueConsumer<TbProtoQueueMsg<N>> nfConsumer;
     protected final Optional<JwtSettingsService> jwtSettingsService;
 
-
     public AbstractConsumerService(ActorSystemContext actorContext, DataDecodingEncodingService encodingService,
-                                   TbTenantProfileCache tenantProfileCache, TbDeviceProfileCache deviceProfileCache,
-                                   TbAssetProfileCache assetProfileCache, TbApiUsageStateService apiUsageStateService,
-                                   PartitionService partitionService, TbQueueConsumer<TbProtoQueueMsg<N>> nfConsumer, Optional<JwtSettingsService> jwtSettingsService) {
+            TbTenantProfileCache tenantProfileCache, TbDeviceProfileCache deviceProfileCache,
+            TbAssetProfileCache assetProfileCache, TbApiUsageStateService apiUsageStateService,
+            PartitionService partitionService, TbQueueConsumer<TbProtoQueueMsg<N>> nfConsumer,
+            Optional<JwtSettingsService> jwtSettingsService) {
         this.actorContext = actorContext;
         this.encodingService = encodingService;
         this.tenantProfileCache = tenantProfileCache;
@@ -96,8 +97,10 @@ public abstract class AbstractConsumerService<N extends com.google.protobuf.Gene
     }
 
     public void init(String mainConsumerThreadName, String nfConsumerThreadName) {
-        this.consumersExecutor = Executors.newCachedThreadPool(ThingsBoardThreadFactory.forName(mainConsumerThreadName));
-        this.notificationsConsumerExecutor = Executors.newSingleThreadExecutor(ThingsBoardThreadFactory.forName(nfConsumerThreadName));
+        this.consumersExecutor = Executors
+                .newCachedThreadPool(ThingsBoardThreadFactory.forName(mainConsumerThreadName));
+        this.notificationsConsumerExecutor = Executors
+                .newSingleThreadExecutor(ThingsBoardThreadFactory.forName(nfConsumerThreadName));
     }
 
     @AfterStartUp(order = AfterStartUp.REGULAR_SERVICE)
@@ -142,8 +145,10 @@ public abstract class AbstractConsumerService<N extends com.google.protobuf.Gene
                         }
                     });
                     if (!processingTimeoutLatch.await(getNotificationPackProcessingTimeout(), TimeUnit.MILLISECONDS)) {
-                        ctx.getAckMap().forEach((id, msg) -> log.warn("[{}] Timeout to process notification: {}", id, msg.getValue()));
-                        ctx.getFailedMap().forEach((id, msg) -> log.warn("[{}] Failed to process notification: {}", id, msg.getValue()));
+                        ctx.getAckMap().forEach(
+                                (id, msg) -> log.warn("[{}] Timeout to process notification: {}", id, msg.getValue()));
+                        ctx.getFailedMap().forEach(
+                                (id, msg) -> log.warn("[{}] Failed to process notification: {}", id, msg.getValue()));
                     }
                     nfConsumer.commit();
                 } catch (Exception e) {
@@ -167,7 +172,8 @@ public abstract class AbstractConsumerService<N extends com.google.protobuf.Gene
             TbActorMsg actorMsg = actorMsgOpt.get();
             if (actorMsg instanceof ComponentLifecycleMsg) {
                 ComponentLifecycleMsg componentLifecycleMsg = (ComponentLifecycleMsg) actorMsg;
-                log.debug("[{}][{}][{}] Received Lifecycle event: {}", componentLifecycleMsg.getTenantId(), componentLifecycleMsg.getEntityId().getEntityType(),
+                log.debug("[{}][{}][{}] Received Lifecycle event: {}", componentLifecycleMsg.getTenantId(),
+                        componentLifecycleMsg.getEntityId().getEntityType(),
                         componentLifecycleMsg.getEntityId(), componentLifecycleMsg.getEvent());
                 if (EntityType.TENANT_PROFILE.equals(componentLifecycleMsg.getEntityId().getEntityType())) {
                     TenantProfileId tenantProfileId = new TenantProfileId(componentLifecycleMsg.getEntityId().getId());
@@ -189,15 +195,21 @@ public abstract class AbstractConsumerService<N extends com.google.protobuf.Gene
                         }
                     }
                 } else if (EntityType.DEVICE_PROFILE.equals(componentLifecycleMsg.getEntityId().getEntityType())) {
-                    deviceProfileCache.evict(componentLifecycleMsg.getTenantId(), new DeviceProfileId(componentLifecycleMsg.getEntityId().getId()));
+                    deviceProfileCache.evict(componentLifecycleMsg.getTenantId(),
+                            new DeviceProfileId(componentLifecycleMsg.getEntityId().getId()));
                 } else if (EntityType.DEVICE.equals(componentLifecycleMsg.getEntityId().getEntityType())) {
-                    deviceProfileCache.evict(componentLifecycleMsg.getTenantId(), new DeviceId(componentLifecycleMsg.getEntityId().getId()));
+                    deviceProfileCache.evict(componentLifecycleMsg.getTenantId(),
+                            new DeviceId(componentLifecycleMsg.getEntityId().getId()));
                 } else if (EntityType.ASSET_PROFILE.equals(componentLifecycleMsg.getEntityId().getEntityType())) {
-                    assetProfileCache.evict(componentLifecycleMsg.getTenantId(), new AssetProfileId(componentLifecycleMsg.getEntityId().getId()));
+                    assetProfileCache.evict(componentLifecycleMsg.getTenantId(),
+                            new AssetProfileId(componentLifecycleMsg.getEntityId().getId()));
                 } else if (EntityType.ASSET.equals(componentLifecycleMsg.getEntityId().getEntityType())) {
-                    assetProfileCache.evict(componentLifecycleMsg.getTenantId(), new AssetId(componentLifecycleMsg.getEntityId().getId()));
+                    assetProfileCache.evict(componentLifecycleMsg.getTenantId(),
+                            new AssetId(componentLifecycleMsg.getEntityId().getId()));
                 } else if (EntityType.ENTITY_VIEW.equals(componentLifecycleMsg.getEntityId().getEntityType())) {
                     actorContext.getTbEntityViewService().onComponentLifecycleMsg(componentLifecycleMsg);
+                } else if (EntityType.ENTITY_GROUP.equals(componentLifecycleMsg.getEntityId().getEntityType())) {
+                    actorContext.getTbEntityGroupService().onComponentLifecycleMsg(componentLifecycleMsg);
                 } else if (EntityType.API_USAGE_STATE.equals(componentLifecycleMsg.getEntityId().getEntityType())) {
                     apiUsageStateService.onApiUsageStateUpdate(componentLifecycleMsg.getTenantId());
                 } else if (EntityType.CUSTOMER.equals(componentLifecycleMsg.getEntityId().getEntityType())) {

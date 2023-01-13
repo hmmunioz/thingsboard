@@ -263,7 +263,7 @@ public class ActorSystemContext {
     @Getter
     private AuditLogService auditLogService;
 
-    @Autowired(required = false)
+    @Autowired
     @Getter
     private EntityGroupService entityGroupService;
 

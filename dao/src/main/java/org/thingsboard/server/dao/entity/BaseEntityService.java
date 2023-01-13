@@ -32,6 +32,7 @@ import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.EdgeId;
+import org.thingsboard.server.common.data.id.EntityGroupId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.EntityViewId;
 import org.thingsboard.server.common.data.id.OtaPackageId;
@@ -51,6 +52,7 @@ import org.thingsboard.server.dao.asset.AssetService;
 import org.thingsboard.server.dao.customer.CustomerService;
 import org.thingsboard.server.dao.dashboard.DashboardService;
 import org.thingsboard.server.dao.device.DeviceService;
+import org.thingsboard.server.dao.entitygroup.EntityGroupService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.exception.IncorrectParameterException;
 import org.thingsboard.server.dao.ota.OtaPackageService;
@@ -83,6 +85,9 @@ public class BaseEntityService extends AbstractEntityService implements EntitySe
     private EntityViewService entityViewService;
 
     @Autowired
+    private EntityGroupService entityGroupService;
+
+    @Autowired
     private TenantService tenantService;
 
     @Autowired
@@ -111,7 +116,8 @@ public class BaseEntityService extends AbstractEntityService implements EntitySe
 
     @Override
     public long countEntitiesByQuery(TenantId tenantId, CustomerId customerId, EntityCountQuery query) {
-        log.trace("Executing countEntitiesByQuery, tenantId [{}], customerId [{}], query [{}]", tenantId, customerId, query);
+        log.trace("Executing countEntitiesByQuery, tenantId [{}], customerId [{}], query [{}]", tenantId, customerId,
+                query);
         validateId(tenantId, INCORRECT_TENANT_ID + tenantId);
         validateId(customerId, INCORRECT_CUSTOMER_ID + customerId);
         validateEntityCountQuery(query);
@@ -120,14 +126,15 @@ public class BaseEntityService extends AbstractEntityService implements EntitySe
 
     @Override
     public PageData<EntityData> findEntityDataByQuery(TenantId tenantId, CustomerId customerId, EntityDataQuery query) {
-        log.trace("Executing findEntityDataByQuery, tenantId [{}], customerId [{}], query [{}]", tenantId, customerId, query);
+        log.trace("Executing findEntityDataByQuery, tenantId [{}], customerId [{}], query [{}]", tenantId, customerId,
+                query);
         validateId(tenantId, INCORRECT_TENANT_ID + tenantId);
         validateId(customerId, INCORRECT_CUSTOMER_ID + customerId);
         validateEntityDataQuery(query);
         return this.entityQueryDao.findEntityDataByQuery(tenantId, customerId, query);
     }
 
-    //TODO: 3.1 Remove this from project.
+    // TODO: 3.1 Remove this from project.
     @Override
     public ListenableFuture<String> fetchEntityNameAsync(TenantId tenantId, EntityId entityId) {
         log.trace("Executing fetchEntityNameAsync [{}]", entityId);
@@ -143,6 +150,7 @@ public class BaseEntityService extends AbstractEntityService implements EntitySe
             case ENTITY_VIEW:
                 hasName = entityViewService.findEntityViewByIdAsync(tenantId, new EntityViewId(entityId.getId()));
                 break;
+
             case TENANT:
                 hasName = tenantService.findTenantByIdAsync(tenantId, TenantId.fromUUID(entityId.getId()));
                 break;
@@ -173,7 +181,9 @@ public class BaseEntityService extends AbstractEntityService implements EntitySe
             default:
                 throw new IllegalStateException("Not Implemented!");
         }
-        entityName = Futures.transform(hasName, (Function<HasName, String>) hasName1 -> hasName1 != null ? hasName1.getName() : null, MoreExecutors.directExecutor());
+        entityName = Futures.transform(hasName,
+                (Function<HasName, String>) hasName1 -> hasName1 != null ? hasName1.getName() : null,
+                MoreExecutors.directExecutor());
         return entityName;
     }
 
@@ -213,6 +223,7 @@ public class BaseEntityService extends AbstractEntityService implements EntitySe
                 } catch (Exception e) {
                 }
                 break;
+               c
             case ENTITY_VIEW:
                 hasCustomerId = entityViewService.findEntityViewById(tenantId, new EntityViewId(entityId.getId()));
                 break;
@@ -241,11 +252,13 @@ public class BaseEntityService extends AbstractEntityService implements EntitySe
     }
 
     private static void validateRelationQuery(RelationsQueryFilter queryFilter) {
-        if (queryFilter.isMultiRoot() && queryFilter.getMultiRootEntitiesType() ==null){
-            throw new IncorrectParameterException("Multi-root relation query filter should contain 'multiRootEntitiesType'");
+        if (queryFilter.isMultiRoot() && queryFilter.getMultiRootEntitiesType() == null) {
+            throw new IncorrectParameterException(
+                    "Multi-root relation query filter should contain 'multiRootEntitiesType'");
         }
         if (queryFilter.isMultiRoot() && CollectionUtils.isEmpty(queryFilter.getMultiRootEntityIds())) {
-            throw new IncorrectParameterException("Multi-root relation query filter should contain 'multiRootEntityIds' array that contains string representation of UUIDs");
+            throw new IncorrectParameterException(
+                    "Multi-root relation query filter should contain 'multiRootEntityIds' array that contains string representation of UUIDs");
         }
         if (!queryFilter.isMultiRoot() && queryFilter.getRootEntity() == null) {
             throw new IncorrectParameterException("Relation query filter root entity should not be blank");

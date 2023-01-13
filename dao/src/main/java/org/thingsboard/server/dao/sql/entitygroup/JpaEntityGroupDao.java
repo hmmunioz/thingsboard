@@ -21,7 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import org.thingsboard.server.common.data.EntityGroup;
-
+import org.thingsboard.server.common.data.id.EntityGroupId;
+import org.thingsboard.server.common.data.page.PageData;
+import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.dao.DaoUtil;
 import org.thingsboard.server.dao.entitygroup.EntityGroupDao;
 import org.thingsboard.server.dao.model.sql.EntityGroupEntity;
@@ -56,6 +58,24 @@ public class JpaEntityGroupDao extends JpaAbstractSearchTextDao<EntityGroupEntit
     @Override
     public EntityGroup findEntityGroupById(UUID entityGroupId) {
         return DaoUtil.getData(entityGroupRepository.findEntityGroupById(entityGroupId));
+    }
+
+    @Override
+    public EntityGroup findByTenantIdAndExternalId(UUID tenantId, UUID externalId) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public PageData<EntityGroup> findByTenantId(UUID tenantId, PageLink pageLink) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public EntityGroupId getExternalIdByInternal(EntityGroupId internalId) {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

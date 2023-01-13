@@ -33,6 +33,7 @@ import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.EdgeId;
+import org.thingsboard.server.common.data.id.EntityGroupId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.EntityIdFactory;
 import org.thingsboard.server.common.data.id.EntityViewId;
@@ -63,11 +64,13 @@ public class RelationEdgeProcessor extends BaseEdgeProcessor {
             EntityRelation entityRelation = new EntityRelation();
 
             UUID fromUUID = new UUID(relationUpdateMsg.getFromIdMSB(), relationUpdateMsg.getFromIdLSB());
-            EntityId fromId = EntityIdFactory.getByTypeAndUuid(EntityType.valueOf(relationUpdateMsg.getFromEntityType()), fromUUID);
+            EntityId fromId = EntityIdFactory
+                    .getByTypeAndUuid(EntityType.valueOf(relationUpdateMsg.getFromEntityType()), fromUUID);
             entityRelation.setFrom(fromId);
 
             UUID toUUID = new UUID(relationUpdateMsg.getToIdMSB(), relationUpdateMsg.getToIdLSB());
-            EntityId toId = EntityIdFactory.getByTypeAndUuid(EntityType.valueOf(relationUpdateMsg.getToEntityType()), toUUID);
+            EntityId toId = EntityIdFactory.getByTypeAndUuid(EntityType.valueOf(relationUpdateMsg.getToEntityType()),
+                    toUUID);
             entityRelation.setTo(toId);
 
             entityRelation.setType(relationUpdateMsg.getType());
@@ -96,7 +99,6 @@ public class RelationEdgeProcessor extends BaseEdgeProcessor {
         }
     }
 
-
     private boolean isEntityExists(TenantId tenantId, EntityId entityId) throws ThingsboardException {
         switch (entityId.getEntityType()) {
             case DEVICE:
@@ -105,6 +107,8 @@ public class RelationEdgeProcessor extends BaseEdgeProcessor {
                 return assetService.findAssetById(tenantId, new AssetId(entityId.getId())) != null;
             case ENTITY_VIEW:
                 return entityViewService.findEntityViewById(tenantId, new EntityViewId(entityId.getId())) != null;
+            case ENTITY_GROUP:
+                return entityGroupService.findEntityGroupById(new EntityGroupId(entityId.getId())) != null;
             case CUSTOMER:
                 return customerService.findCustomerById(tenantId, new CustomerId(entityId.getId())) != null;
             case USER:
@@ -112,22 +116,27 @@ public class RelationEdgeProcessor extends BaseEdgeProcessor {
             case DASHBOARD:
                 return dashboardService.findDashboardById(tenantId, new DashboardId(entityId.getId())) != null;
             default:
-                throw new ThingsboardException("Unsupported entity type " + entityId.getEntityType(), ThingsboardErrorCode.INVALID_ARGUMENTS);
+                throw new ThingsboardException("Unsupported entity type " + entityId.getEntityType(),
+                        ThingsboardErrorCode.INVALID_ARGUMENTS);
         }
     }
 
     public DownlinkMsg convertRelationEventToDownlink(EdgeEvent edgeEvent) {
-        EntityRelation entityRelation = JacksonUtil.OBJECT_MAPPER.convertValue(edgeEvent.getBody(), EntityRelation.class);
+        EntityRelation entityRelation = JacksonUtil.OBJECT_MAPPER.convertValue(edgeEvent.getBody(),
+                EntityRelation.class);
         UpdateMsgType msgType = getUpdateMsgType(edgeEvent.getAction());
-        RelationUpdateMsg relationUpdateMsg = relationMsgConstructor.constructRelationUpdatedMsg(msgType, entityRelation);
+        RelationUpdateMsg relationUpdateMsg = relationMsgConstructor.constructRelationUpdatedMsg(msgType,
+                entityRelation);
         return DownlinkMsg.newBuilder()
                 .setDownlinkMsgId(EdgeUtils.nextPositiveInt())
                 .addRelationUpdateMsg(relationUpdateMsg)
                 .build();
     }
 
-    public ListenableFuture<Void> processRelationNotification(TenantId tenantId, TransportProtos.EdgeNotificationMsgProto edgeNotificationMsg) throws JsonProcessingException {
-        EntityRelation relation = JacksonUtil.OBJECT_MAPPER.readValue(edgeNotificationMsg.getBody(), EntityRelation.class);
+    public ListenableFuture<Void> processRelationNotification(TenantId tenantId,
+            TransportProtos.EdgeNotificationMsgProto edgeNotificationMsg) throws JsonProcessingException {
+        EntityRelation relation = JacksonUtil.OBJECT_MAPPER.readValue(edgeNotificationMsg.getBody(),
+                EntityRelation.class);
         if (relation.getFrom().getEntityType().equals(EntityType.EDGE) ||
                 relation.getTo().getEntityType().equals(EntityType.EDGE)) {
             return Futures.immediateFuture(null);

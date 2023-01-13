@@ -32,6 +32,7 @@ import org.thingsboard.server.common.data.DataConstants;
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.EdgeUtils;
+import org.thingsboard.server.common.data.EntityGroup;
 import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.EntityView;
 import org.thingsboard.server.common.data.asset.Asset;
@@ -44,6 +45,7 @@ import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.EdgeId;
+import org.thingsboard.server.common.data.id.EntityGroupId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.EntityViewId;
 import org.thingsboard.server.common.data.id.RuleChainId;
@@ -90,21 +92,26 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
     public List<ListenableFuture<Void>> processTelemetryFromEdge(TenantId tenantId, EntityDataProto entityData) {
         log.trace("[{}] processTelemetryFromEdge [{}]", tenantId, entityData);
         List<ListenableFuture<Void>> result = new ArrayList<>();
-        EntityId entityId = constructEntityId(entityData.getEntityType(), entityData.getEntityIdMSB(), entityData.getEntityIdLSB());
-        if ((entityData.hasPostAttributesMsg() || entityData.hasPostTelemetryMsg() || entityData.hasAttributesUpdatedMsg()) && entityId != null) {
+        EntityId entityId = constructEntityId(entityData.getEntityType(), entityData.getEntityIdMSB(),
+                entityData.getEntityIdLSB());
+        if ((entityData.hasPostAttributesMsg() || entityData.hasPostTelemetryMsg()
+                || entityData.hasAttributesUpdatedMsg()) && entityId != null) {
             Pair<TbMsgMetaData, CustomerId> pair = getBaseMsgMetadataAndCustomerId(tenantId, entityId);
             TbMsgMetaData metaData = pair.getKey();
             CustomerId customerId = pair.getValue();
             metaData.putValue(DataConstants.MSG_SOURCE_KEY, DataConstants.EDGE_MSG_SOURCE);
             if (entityData.hasPostAttributesMsg()) {
-                result.add(processPostAttributes(tenantId, customerId, entityId, entityData.getPostAttributesMsg(), metaData));
+                result.add(processPostAttributes(tenantId, customerId, entityId, entityData.getPostAttributesMsg(),
+                        metaData));
             }
             if (entityData.hasAttributesUpdatedMsg()) {
                 metaData.putValue("scope", entityData.getPostAttributeScope());
-                result.add(processAttributesUpdate(tenantId, customerId, entityId, entityData.getAttributesUpdatedMsg(), metaData));
+                result.add(processAttributesUpdate(tenantId, customerId, entityId, entityData.getAttributesUpdatedMsg(),
+                        metaData));
             }
             if (entityData.hasPostTelemetryMsg()) {
-                result.add(processPostTelemetry(tenantId, customerId, entityId, entityData.getPostTelemetryMsg(), metaData));
+                result.add(processPostTelemetry(tenantId, customerId, entityId, entityData.getPostTelemetryMsg(),
+                        metaData));
             }
             if (EntityType.DEVICE.equals(entityId.getEntityType())) {
                 DeviceId deviceId = new DeviceId(entityId.getId());
@@ -126,7 +133,8 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
             }
         }
         if (entityData.hasAttributeDeleteMsg()) {
-            result.add(processAttributeDeleteMsg(tenantId, entityId, entityData.getAttributeDeleteMsg(), entityData.getEntityType()));
+            result.add(processAttributeDeleteMsg(tenantId, entityId, entityData.getAttributeDeleteMsg(),
+                    entityData.getEntityType()));
         }
         return result;
     }
@@ -152,11 +160,21 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
                 }
                 break;
             case ENTITY_VIEW:
-                EntityView entityView = entityViewService.findEntityViewById(tenantId, new EntityViewId(entityId.getId()));
+                EntityView entityView = entityViewService.findEntityViewById(tenantId,
+                        new EntityViewId(entityId.getId()));
                 if (entityView != null) {
                     customerId = entityView.getCustomerId();
                     metaData.putValue("entityViewName", entityView.getName());
                     metaData.putValue("entityViewType", entityView.getType());
+                }
+                break;
+
+            case ENTITY_GROUP:
+                EntityGroup entityGroup = entityGroupService.findEntityGroupById(new EntityGroupId(entityId.getId()));
+                if (entityGroup != null) {
+
+                    metaData.putValue("entityViewName", entityGroup.getName());
+                    metaData.putValue("entityViewType", entityGroup.getType());
                 }
                 break;
             case EDGE:
@@ -171,16 +189,19 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
                 log.debug("Using empty metadata for entityId [{}]", entityId);
                 break;
         }
-        return new ImmutablePair<>(metaData, customerId != null ? customerId : new CustomerId(ModelConstants.NULL_UUID));
+        return new ImmutablePair<>(metaData,
+                customerId != null ? customerId : new CustomerId(ModelConstants.NULL_UUID));
     }
 
-    private ListenableFuture<Void> processPostTelemetry(TenantId tenantId, CustomerId customerId, EntityId entityId, TransportProtos.PostTelemetryMsg msg, TbMsgMetaData metaData) {
+    private ListenableFuture<Void> processPostTelemetry(TenantId tenantId, CustomerId customerId, EntityId entityId,
+            TransportProtos.PostTelemetryMsg msg, TbMsgMetaData metaData) {
         SettableFuture<Void> futureToSet = SettableFuture.create();
         for (TransportProtos.TsKvListProto tsKv : msg.getTsKvListList()) {
             JsonObject json = JsonUtils.getJsonObject(tsKv.getKvList());
             metaData.putValue("ts", tsKv.getTs() + "");
             var defaultQueueAndRuleChain = getDefaultQueueNameAndRuleChainId(tenantId, entityId);
-            TbMsg tbMsg = TbMsg.newMsg(defaultQueueAndRuleChain.getKey(), SessionMsgType.POST_TELEMETRY_REQUEST.name(), entityId, customerId, metaData, gson.toJson(json), defaultQueueAndRuleChain.getValue(), null);
+            TbMsg tbMsg = TbMsg.newMsg(defaultQueueAndRuleChain.getKey(), SessionMsgType.POST_TELEMETRY_REQUEST.name(),
+                    entityId, customerId, metaData, gson.toJson(json), defaultQueueAndRuleChain.getValue(), null);
             tbClusterService.pushMsgToRuleEngine(tenantId, tbMsg.getOriginator(), tbMsg, new TbQueueCallback() {
                 @Override
                 public void onSuccess(TbQueueMsgMetadata metadata) {
@@ -220,11 +241,13 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
         return new ImmutablePair<>(queueName, ruleChainId);
     }
 
-    private ListenableFuture<Void> processPostAttributes(TenantId tenantId, CustomerId customerId, EntityId entityId, TransportProtos.PostAttributeMsg msg, TbMsgMetaData metaData) {
+    private ListenableFuture<Void> processPostAttributes(TenantId tenantId, CustomerId customerId, EntityId entityId,
+            TransportProtos.PostAttributeMsg msg, TbMsgMetaData metaData) {
         SettableFuture<Void> futureToSet = SettableFuture.create();
         JsonObject json = JsonUtils.getJsonObject(msg.getKvList());
         var defaultQueueAndRuleChain = getDefaultQueueNameAndRuleChainId(tenantId, entityId);
-        TbMsg tbMsg = TbMsg.newMsg(defaultQueueAndRuleChain.getKey(), SessionMsgType.POST_ATTRIBUTES_REQUEST.name(), entityId, customerId, metaData, gson.toJson(json), defaultQueueAndRuleChain.getValue(), null);
+        TbMsg tbMsg = TbMsg.newMsg(defaultQueueAndRuleChain.getKey(), SessionMsgType.POST_ATTRIBUTES_REQUEST.name(),
+                entityId, customerId, metaData, gson.toJson(json), defaultQueueAndRuleChain.getValue(), null);
         tbClusterService.pushMsgToRuleEngine(tenantId, tbMsg.getOriginator(), tbMsg, new TbQueueCallback() {
             @Override
             public void onSuccess(TbQueueMsgMetadata metadata) {
@@ -241,10 +264,10 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
     }
 
     private ListenableFuture<Void> processAttributesUpdate(TenantId tenantId,
-                                                           CustomerId customerId,
-                                                           EntityId entityId,
-                                                           TransportProtos.PostAttributeMsg msg,
-                                                           TbMsgMetaData metaData) {
+            CustomerId customerId,
+            EntityId entityId,
+            TransportProtos.PostAttributeMsg msg,
+            TbMsgMetaData metaData) {
         SettableFuture<Void> futureToSet = SettableFuture.create();
         JsonObject json = JsonUtils.getJsonObject(msg.getKvList());
         List<AttributeKvEntry> attributes = new ArrayList<>(JsonConverter.convertToAttributes(json));
@@ -253,7 +276,8 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
             @Override
             public void onSuccess(@Nullable Void tmp) {
                 var defaultQueueAndRuleChain = getDefaultQueueNameAndRuleChainId(tenantId, entityId);
-                TbMsg tbMsg = TbMsg.newMsg(defaultQueueAndRuleChain.getKey(), DataConstants.ATTRIBUTES_UPDATED, entityId,
+                TbMsg tbMsg = TbMsg.newMsg(defaultQueueAndRuleChain.getKey(), DataConstants.ATTRIBUTES_UPDATED,
+                        entityId,
                         customerId, metaData, gson.toJson(json), defaultQueueAndRuleChain.getValue(), null);
                 tbClusterService.pushMsgToRuleEngine(tenantId, tbMsg.getOriginator(), tbMsg, new TbQueueCallback() {
                     @Override
@@ -278,8 +302,9 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
         return futureToSet;
     }
 
-    private ListenableFuture<Void> processAttributeDeleteMsg(TenantId tenantId, EntityId entityId, AttributeDeleteMsg attributeDeleteMsg,
-                                                             String entityType) {
+    private ListenableFuture<Void> processAttributeDeleteMsg(TenantId tenantId, EntityId entityId,
+            AttributeDeleteMsg attributeDeleteMsg,
+            String entityType) {
         SettableFuture<Void> futureToSet = SettableFuture.create();
         String scope = attributeDeleteMsg.getScope();
         List<String> attributeNames = attributeDeleteMsg.getAttributeNamesList();
@@ -287,17 +312,17 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
         if (EntityType.DEVICE.name().equals(entityType)) {
             tbClusterService.pushMsgToCore(DeviceAttributesEventNotificationMsg.onDelete(
                     tenantId, (DeviceId) entityId, scope, attributeNames), new TbQueueCallback() {
-                @Override
-                public void onSuccess(TbQueueMsgMetadata metadata) {
-                    futureToSet.set(null);
-                }
+                        @Override
+                        public void onSuccess(TbQueueMsgMetadata metadata) {
+                            futureToSet.set(null);
+                        }
 
-                @Override
-                public void onFailure(Throwable t) {
-                    log.error("Can't process attribute delete msg [{}]", attributeDeleteMsg, t);
-                    futureToSet.setException(t);
-                }
-            });
+                        @Override
+                        public void onFailure(Throwable t) {
+                            log.error("Can't process attribute delete msg [{}]", attributeDeleteMsg, t);
+                            futureToSet.setException(t);
+                        }
+                    });
         }
         return futureToSet;
     }
@@ -337,8 +362,10 @@ public class TelemetryEdgeProcessor extends BaseEdgeProcessor {
                 JsonUtils.parse(JacksonUtil.OBJECT_MAPPER.writeValueAsString(edgeEvent.getBody())));
     }
 
-    private DownlinkMsg constructEntityDataProtoMsg(EntityId entityId, EdgeEventActionType actionType, JsonElement entityData) {
-        EntityDataProto entityDataProto = entityDataMsgConstructor.constructEntityDataMsg(entityId, actionType, entityData);
+    private DownlinkMsg constructEntityDataProtoMsg(EntityId entityId, EdgeEventActionType actionType,
+            JsonElement entityData) {
+        EntityDataProto entityDataProto = entityDataMsgConstructor.constructEntityDataMsg(entityId, actionType,
+                entityData);
         return DownlinkMsg.newBuilder()
                 .setDownlinkMsgId(EdgeUtils.nextPositiveInt())
                 .addEntityData(entityDataProto)

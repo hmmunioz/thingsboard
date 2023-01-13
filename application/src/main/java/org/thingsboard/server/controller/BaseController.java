@@ -242,7 +242,7 @@ public abstract class BaseController {
     @Autowired
     protected EntityViewService entityViewService;
 
-    @Autowired(required = false)
+    @Autowired
     protected EntityGroupService entityGroupService;
 
     @Autowired

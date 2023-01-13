@@ -18,7 +18,11 @@ package org.thingsboard.server.dao.entitygroup;
 import org.thingsboard.server.common.data.EntityGroup;
 import org.thingsboard.server.common.data.id.EntityGroupId;
 
+import com.datastax.oss.driver.shaded.guava.common.util.concurrent.ListenableFuture;
+
 public interface EntityGroupService {
 
     EntityGroup findEntityGroupById(EntityGroupId entityGroupId);
+
+    ListenableFuture<EntityGroup> findEntityGroupByIdAsync(EntityGroupId entityGroupId);
 }
