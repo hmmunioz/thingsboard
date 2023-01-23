@@ -75,10 +75,15 @@ public class DefaultTbEntityGroupService extends AbstractTbEntityService impleme
     public EntityGroup findEntityGroupById(EntityGroupId entityGroupId) throws ThingsboardException {
 
         try {
+            System.out.println("entityGroupId DefaultTbEntityGroupService");
+            System.out.println(entityGroupId);
             EntityGroup entityGroup = checkNotNull(entityGroupService.findEntityGroupById(entityGroupId));
+            System.out.println(entityGroup.getName());
+            System.out.println(entityGroup.getId());
+            System.out.println(entityGroup.getType());
             return entityGroup;
         } catch (Exception e) {
-
+            System.out.println(e.getStackTrace());
             throw e;
         }
     }

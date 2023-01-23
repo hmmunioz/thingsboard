@@ -98,7 +98,8 @@ public class JpaEntityViewDao extends JpaAbstractSearchTextDao<EntityViewEntity,
     }
 
     @Override
-    public PageData<EntityViewInfo> findEntityViewInfosByTenantIdAndType(UUID tenantId, String type, PageLink pageLink) {
+    public PageData<EntityViewInfo> findEntityViewInfosByTenantIdAndType(UUID tenantId, String type,
+            PageLink pageLink) {
         return DaoUtil.toPageData(
                 entityViewRepository.findEntityViewInfosByTenantIdAndType(
                         tenantId,
@@ -115,19 +116,19 @@ public class JpaEntityViewDao extends JpaAbstractSearchTextDao<EntityViewEntity,
 
     @Override
     public PageData<EntityView> findEntityViewsByTenantIdAndCustomerId(UUID tenantId,
-                                                                       UUID customerId,
-                                                                       PageLink pageLink) {
+            UUID customerId,
+            PageLink pageLink) {
         return DaoUtil.toPageData(
                 entityViewRepository.findByTenantIdAndCustomerId(
                         tenantId,
                         customerId,
                         Objects.toString(pageLink.getTextSearch(), ""),
-                        DaoUtil.toPageable(pageLink)
-                ));
+                        DaoUtil.toPageable(pageLink)));
     }
 
     @Override
-    public PageData<EntityViewInfo> findEntityViewInfosByTenantIdAndCustomerId(UUID tenantId, UUID customerId, PageLink pageLink) {
+    public PageData<EntityViewInfo> findEntityViewInfosByTenantIdAndCustomerId(UUID tenantId, UUID customerId,
+            PageLink pageLink) {
         return DaoUtil.toPageData(
                 entityViewRepository.findEntityViewInfosByTenantIdAndCustomerId(
                         tenantId,
@@ -137,19 +138,20 @@ public class JpaEntityViewDao extends JpaAbstractSearchTextDao<EntityViewEntity,
     }
 
     @Override
-    public PageData<EntityView> findEntityViewsByTenantIdAndCustomerIdAndType(UUID tenantId, UUID customerId, String type, PageLink pageLink) {
+    public PageData<EntityView> findEntityViewsByTenantIdAndCustomerIdAndType(UUID tenantId, UUID customerId,
+            String type, PageLink pageLink) {
         return DaoUtil.toPageData(
                 entityViewRepository.findByTenantIdAndCustomerIdAndType(
                         tenantId,
                         customerId,
                         type,
                         Objects.toString(pageLink.getTextSearch(), ""),
-                        DaoUtil.toPageable(pageLink)
-                ));
+                        DaoUtil.toPageable(pageLink)));
     }
 
     @Override
-    public PageData<EntityViewInfo> findEntityViewInfosByTenantIdAndCustomerIdAndType(UUID tenantId, UUID customerId, String type, PageLink pageLink) {
+    public PageData<EntityViewInfo> findEntityViewInfosByTenantIdAndCustomerIdAndType(UUID tenantId, UUID customerId,
+            String type, PageLink pageLink) {
         return DaoUtil.toPageData(
                 entityViewRepository.findEntityViewInfosByTenantIdAndCustomerIdAndType(
                         tenantId,
@@ -167,7 +169,8 @@ public class JpaEntityViewDao extends JpaAbstractSearchTextDao<EntityViewEntity,
 
     @Override
     public ListenableFuture<List<EntitySubtype>> findTenantEntityViewTypesAsync(UUID tenantId) {
-        return service.submit(() -> convertTenantEntityViewTypesToDto(tenantId, entityViewRepository.findTenantEntityViewTypes(tenantId)));
+        return service.submit(() -> convertTenantEntityViewTypesToDto(tenantId,
+                entityViewRepository.findTenantEntityViewTypes(tenantId)));
     }
 
     private List<EntitySubtype> convertTenantEntityViewTypesToDto(UUID tenantId, List<String> types) {
@@ -183,7 +186,8 @@ public class JpaEntityViewDao extends JpaAbstractSearchTextDao<EntityViewEntity,
 
     @Override
     public PageData<EntityView> findEntityViewsByTenantIdAndEdgeId(UUID tenantId, UUID edgeId, PageLink pageLink) {
-        log.debug("Try to find entity views by tenantId [{}], edgeId [{}] and pageLink [{}]", tenantId, edgeId, pageLink);
+        log.debug("Try to find entity views by tenantId [{}], edgeId [{}] and pageLink [{}]", tenantId, edgeId,
+                pageLink);
         return DaoUtil.toPageData(entityViewRepository
                 .findByTenantIdAndEdgeId(
                         tenantId,
@@ -193,8 +197,10 @@ public class JpaEntityViewDao extends JpaAbstractSearchTextDao<EntityViewEntity,
     }
 
     @Override
-    public PageData<EntityView> findEntityViewsByTenantIdAndEdgeIdAndType(UUID tenantId, UUID edgeId, String type, PageLink pageLink) {
-        log.debug("Try to find entity views by tenantId [{}], edgeId [{}], type [{}] and pageLink [{}]", tenantId, edgeId, type, pageLink);
+    public PageData<EntityView> findEntityViewsByTenantIdAndEdgeIdAndType(UUID tenantId, UUID edgeId, String type,
+            PageLink pageLink) {
+        log.debug("Try to find entity views by tenantId [{}], edgeId [{}], type [{}] and pageLink [{}]", tenantId,
+                edgeId, type, pageLink);
         return DaoUtil.toPageData(entityViewRepository
                 .findByTenantIdAndEdgeIdAndType(
                         tenantId,

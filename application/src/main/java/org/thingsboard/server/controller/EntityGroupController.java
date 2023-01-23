@@ -103,17 +103,24 @@ public class EntityGroupController extends BaseController {
     @ApiOperation(value = "Get entity group (getEntityGroupById)", notes = "Fetch the EntityGroup object based on the provided entity view id. "
             + ENTITY_VIEW_DESCRIPTION + MODEL_DESCRIPTION
             + TENANT_OR_CUSTOMER_AUTHORITY_PARAGRAPH, produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')")
-    @RequestMapping(value = "/entityGroup", method = RequestMethod.GET)
+    /* @PreAuthorize("hasAnyAuthority('TENANT_ADMIN', 'CUSTOMER_USER')") */
+    @RequestMapping(value = "/entityGroup/{entityGroupId}", method = RequestMethod.GET)
     @ResponseBody
     public EntityGroup getEntityGroupById(@PathVariable(ENTITY_GROUP_ID) String strEntityGroupId)
             throws ThingsboardException {
-
-        checkParameter(ENTITY_GROUP_ID, strEntityGroupId);
-
+        System.out.println("SEEE IMPRIMIOOO EL ENTITY GROUP data controller");
+        System.out.println(strEntityGroupId);
         try {
-            return checkEntityGroupId(new EntityGroupId(toUUID(strEntityGroupId)), Operation.READ);
+
+            EntityGroup entityGroup = checkEntityGroupId(new EntityGroupId(toUUID(strEntityGroupId)), Operation.READ);
+
+            System.out.println(entityGroup.getName());
+            System.out.println(entityGroup.getType());
+            System.out.println(entityGroup.getAdditionalInfo());
+            System.out.println(entityGroup.getId());
+            return entityGroup;
         } catch (Exception e) {
+            System.out.println(e.getMessage());
             throw handleException(e);
         }
     }

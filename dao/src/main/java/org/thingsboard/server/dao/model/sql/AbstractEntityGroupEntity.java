@@ -60,10 +60,6 @@ public abstract class AbstractEntityGroupEntity<T extends EntityGroup> extends B
     @Column(name = "id")
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = ENTITY_TYPE_PROPERTY)
-    private EntityType entityType;
-
     @Column(name = "owner_id")
     private UUID ownerId;
 
@@ -101,7 +97,6 @@ public abstract class AbstractEntityGroupEntity<T extends EntityGroup> extends B
         this.setId(entityGroupEntity.getId());
         this.setCreatedTime(entityGroupEntity.getCreatedTime());
         this.id = entityGroupEntity.getUuid();
-        this.entityType = entityGroupEntity.getEntityType();
         this.ownerId = entityGroupEntity.getOwnerId();
         this.type = entityGroupEntity.getType();
         this.name = entityGroupEntity.getName();
@@ -124,7 +119,10 @@ public abstract class AbstractEntityGroupEntity<T extends EntityGroup> extends B
         entityGroup.setName(name);
 
         entityGroup.setAdditionalInfo(additionalInfo);
-        System.out.println("SEEE IMPRIMIOOO EL ENTITY GROUP");
+        System.out.println("SEEE IMPRIMIOOO EL ENTITY GROUP sql");
+        System.out.println(name);
+        System.out.println(type);
+        System.out.println(entityGroup.getUuidId());
         return entityGroup;
     }
 }

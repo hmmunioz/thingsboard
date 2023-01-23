@@ -675,14 +675,24 @@ public abstract class BaseController {
     protected EntityGroup checkEntityGroupId(EntityGroupId entityGroupId, Operation operation)
             throws ThingsboardException {
         try {
+            System.out.println("base controller");
             validateId(entityGroupId, "Incorrect entityViewId " + entityGroupId);
+
             EntityGroup entityGroup = entityGroupService.findEntityGroupById(entityGroupId);
+
+            System.out.println(entityGroup);
+            System.out.println(entityGroup.getUuidId());
+            System.out.println(entityGroup.getName());
+            System.out.println(entityGroup.getType());
+            System.out.println(entityGroup.getAdditionalInfo());
+            System.out.println(entityGroup.getId());
             checkNotNull(entityGroup, "Entity view with id [" + entityGroupId +
                     "] is not found");
 
             return entityGroup;
         } catch (Exception e) {
-            throw handleException(e, false);
+            System.out.println(e.getMessage());
+            throw handleException(e, true);
         }
     }
 

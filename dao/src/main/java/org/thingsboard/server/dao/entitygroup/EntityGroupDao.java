@@ -33,7 +33,7 @@ import java.util.UUID;
 /**
  * Created by Victor Basanets on 8/28/2017.
  */
-public interface EntityGroupDao extends Dao<EntityGroup>, ExportableEntityDao<EntityGroupId, EntityGroup> {
+public interface EntityGroupDao extends Dao<EntityGroup> {
 
     EntityGroup findEntityGroupById(UUID entityGroupId);
 

@@ -40,6 +40,7 @@ public class EntityGroup extends SearchTextBasedWithAdditionalInfo<EntityGroupId
         implements HasName, HasOwnerId, ExportableEntity<EntityGroupId> {
 
     private static final long serialVersionUID = 5582010124562018986L;
+
     private OwnerId ownerId;
     @NoXss
     @Length(fieldName = "name")
@@ -49,9 +50,9 @@ public class EntityGroup extends SearchTextBasedWithAdditionalInfo<EntityGroupId
     @Length(fieldName = "type")
     @ApiModelProperty(position = 5, example = "Temperature Sensor")
     private String type;
-    @ApiModelProperty(position = 8, example = "Temperature Sensor")
+    @ApiModelProperty(position = 7, example = "Temperature Sensor")
     private boolean groupAll;
-    @ApiModelProperty(position = 9, example = "Temperature Sensor")
+    @ApiModelProperty(position = 8, example = "Temperature Sensor")
     private boolean edgeGroupAll;
 
     public EntityGroup() {
@@ -69,6 +70,12 @@ public class EntityGroup extends SearchTextBasedWithAdditionalInfo<EntityGroupId
         this.name = entityGroup.getName();
         this.type = entityGroup.getType();
         this.createdTime = entityGroup.getCreatedTime();
+        System.out.println("SEEE IMPRIMIOOO EL ENTITY GROUP data entitygroup");
+        System.out.println(entityGroup.getId());
+        System.out.println(entityGroup.getOwnerId());
+        System.out.println(entityGroup.getName());
+        System.out.println(entityGroup.getType());
+        System.out.println(entityGroup.getCreatedTime());
     }
 
     @Override
@@ -91,6 +98,7 @@ public class EntityGroup extends SearchTextBasedWithAdditionalInfo<EntityGroupId
             "Specify this field to update the Entity View. " +
             "Referencing non-existing Entity View Id will cause error. " +
             "Omit this field to create new Entity View.")
+
     @Override
     public EntityGroupId getId() {
         return super.getId();

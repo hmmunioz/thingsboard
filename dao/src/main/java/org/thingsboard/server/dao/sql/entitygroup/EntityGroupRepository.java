@@ -30,7 +30,7 @@ import java.util.UUID;
 public interface EntityGroupRepository
                 extends JpaRepository<EntityGroupEntity, UUID> {
 
-        @Query("SELECT a FROM EntityGroupEntity a where id='18ca8b40-d5b7-11ea-8d09-d921d0bc0ee5'")
+        @Query("SELECT a FROM EntityGroupEntity a where id= :entityGroupId")
         EntityGroupEntity findEntityGroupById(@Param("entityGroupId") UUID entityGroupId);
 
 }

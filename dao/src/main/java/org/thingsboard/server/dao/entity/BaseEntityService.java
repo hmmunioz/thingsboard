@@ -85,9 +85,6 @@ public class BaseEntityService extends AbstractEntityService implements EntitySe
     private EntityViewService entityViewService;
 
     @Autowired
-    private EntityGroupService entityGroupService;
-
-    @Autowired
     private TenantService tenantService;
 
     @Autowired
@@ -223,7 +220,7 @@ public class BaseEntityService extends AbstractEntityService implements EntitySe
                 } catch (Exception e) {
                 }
                 break;
-               c
+
             case ENTITY_VIEW:
                 hasCustomerId = entityViewService.findEntityViewById(tenantId, new EntityViewId(entityId.getId()));
                 break;
